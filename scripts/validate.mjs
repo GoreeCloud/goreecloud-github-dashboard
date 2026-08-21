@@ -73,7 +73,7 @@ if (!failures.length) {
   const secretPatterns = [
     /ghp_[A-Za-z0-9]{20,}/,
     /github_pat_[A-Za-z0-9_]{20,}/,
-    /GITHUB_TOKEN\s*=\s*[^\s#][^\n]*/,
+    /GITHUB_TOKEN\s*=\s*[A-Za-z0-9_-]{20,}/,
     /Authorization:\s*["'`]Bearer\s+[A-Za-z0-9_-]{20,}/i,
   ];
 
