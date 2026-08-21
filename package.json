@@ -1,6 +1,6 @@
 {
   "name": "goreecloud-github-dashboard",
-  "version": "0.1.0-dev",
+  "version": "0.2.0-dev",
   "private": true,
   "description": "Private GoreeCloud dashboard for GitHub repository activity and health.",
   "license": "MIT",

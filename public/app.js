@@ -10,6 +10,13 @@ function setText(id, value) {
   if (element) element.textContent = String(value ?? "—");
 }
 
+function setPill(id, value, success = false) {
+  const element = byId(id);
+  if (!element) return;
+  element.textContent = String(value ?? "—");
+  element.className = success ? "pill pill-success" : "pill";
+}
+
 function clear(element) {
   while (element.firstChild) element.removeChild(element.firstChild);
 }
@@ -126,6 +133,93 @@ function renderTopRepositories(items = []) {
   });
 }
 
+function renderAttention(items = []) {
+  const container = byId("attention-list");
+  clear(container);
+  setText("attention-count", items.length);
+
+  if (!items.length) {
+    container.append(emptyState("No attention signals were produced for the ranked repositories."));
+    return;
+  }
+
+  for (const item of items) {
+    const card = document.createElement("article");
+    card.className = "list-card";
+
+    const header = document.createElement("div");
+    header.className = "list-card-header";
+    const link = createLink(item.url);
+    const title = document.createElement("h3");
+    title.className = "item-title";
+    title.textContent = item.repository;
+    link.append(title);
+
+    const label = item.severity === "critical" ? "Critical" : item.severity === "warning" ? "Review" : "Info";
+    const variant = item.severity === "critical" || item.severity === "warning" ? "private" : "";
+    header.append(link, createBadge(label, variant));
+
+    const description = document.createElement("p");
+    description.className = "item-description";
+    description.textContent = (item.reasons || []).join(" · ");
+
+    const meta = document.createElement("p");
+    meta.className = "item-meta";
+    meta.textContent = `Activity ${Math.round(item.activityScore || 0)} pts · updated ${formatRelative(item.updatedAt)}`;
+
+    card.append(header, description, meta);
+    container.append(card);
+  }
+}
+
+function renderWorkflowHealth(items = [], dataHealth = {}) {
+  const container = byId("workflow-list");
+  clear(container);
+  setText("workflow-count", items.length);
+
+  if (!items.length) {
+    const unavailable = Number(dataHealth.workflowRepositoriesUnavailable || 0);
+    container.append(emptyState(
+      unavailable
+        ? "Workflow status is unavailable with the current read permissions. Other dashboard data remains usable."
+        : "No workflow status was returned for the ranked repositories.",
+    ));
+    return;
+  }
+
+  for (const item of items) {
+    const card = document.createElement("article");
+    card.className = "list-card";
+
+    const header = document.createElement("div");
+    header.className = "list-card-header";
+    const link = createLink(item.url);
+    const title = document.createElement("h3");
+    title.className = "item-title";
+    title.textContent = item.repository;
+    link.append(title);
+
+    const stateLabel = item.conclusion || item.status || "unknown";
+    const failureStates = new Set(["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"]);
+    const variant = stateLabel === "success" ? "success" : failureStates.has(stateLabel) ? "private" : "";
+    header.append(link, createBadge(stateLabel.replaceAll("_", " "), variant));
+
+    const description = document.createElement("p");
+    description.className = "item-description";
+    description.textContent = item.status === "none"
+      ? "No workflow run was returned."
+      : item.title || "GitHub Actions";
+
+    const meta = document.createElement("p");
+    meta.className = "item-meta";
+    meta.textContent = [item.event, item.branch, item.updatedAt ? formatRelative(item.updatedAt) : null].filter(Boolean).join(" · ");
+
+    card.append(header, description);
+    if (meta.textContent) card.append(meta);
+    container.append(card);
+  }
+}
+
 function renderCardList(containerId, countId, items, type) {
   const container = byId(containerId);
   clear(container);
@@ -238,17 +332,37 @@ function emptyState(message, tagName = "div") {
 function renderDashboard(data) {
   state.data = data;
   const summary = data.summary || {};
+  const dataHealth = data.dataHealth || {};
+  const coreRate = data.rateLimit?.core;
 
   setText("stat-total", summary.totalRepositories ?? 0);
   setText("stat-private", summary.privateRepositories ?? 0);
   setText("stat-public", summary.publicRepositories ?? 0);
   setText("stat-open-work", (summary.openPullRequests ?? 0) + (summary.openIssues ?? 0));
-  setText("generated-at", `Updated ${formatRelative(data.generatedAt)}`);
-  setText("api-state", "Read-only data connected");
+  setPill("generated-at", `Updated ${formatRelative(data.generatedAt)}`);
+  setPill("api-state", "Read-only data connected", true);
+
+  const coverageComplete = dataHealth.status === "complete";
+  const unavailable = Number(dataHealth.workflowRepositoriesUnavailable || 0);
+  setPill(
+    "data-state",
+    coverageComplete ? "Coverage complete" : `Partial coverage${unavailable ? ` · ${unavailable} CI unavailable` : ""}`,
+    coverageComplete,
+  );
+
+  if (coreRate) {
+    const healthyRate = coreRate.limit > 0 && coreRate.remaining / coreRate.limit > 0.1;
+    setPill("rate-state", `API ${coreRate.remaining.toLocaleString()} remaining`, healthyRate);
+  } else {
+    setPill("rate-state", "Rate limit unavailable");
+  }
+
   setText("sidebar-status", `${summary.totalRepositories ?? 0} repositories connected`);
 
   renderRecentChanges(data.recentChanges || []);
   renderTopRepositories(data.topRepositories || []);
+  renderAttention(data.repositoryAttention || []);
+  renderWorkflowHealth(data.workflowHealth || [], dataHealth);
   renderCardList("changelog-list", "changelog-count", data.changelogs || [], "changelog");
   renderCardList("release-list", "release-count", data.releases || [], "release");
   renderCardList("pr-list", "pr-count", data.pullRequests || [], "pull request");
@@ -291,7 +405,9 @@ async function refreshDashboard() {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load dashboard data.";
     showAlert(`${message} The interface remains read-only and no GitHub data was changed.`);
-    setText("api-state", "Data unavailable");
+    setPill("api-state", "Data unavailable");
+    setPill("data-state", "Coverage unavailable");
+    setPill("rate-state", "Rate limit unavailable");
     setText("sidebar-status", "Data unavailable");
   } finally {
     setLoading(false);

@@ -1,9 +1,12 @@
 import {
+  buildRepositoryAttention,
   fetchAllRepositories,
   fetchChangelogs,
   fetchOpenWork,
+  fetchRateLimit,
   fetchRecentChanges,
   fetchReleases,
+  fetchWorkflowHealth,
   normalizeRepository,
   summarizeRepositories,
   topRepositories,
@@ -48,17 +51,27 @@ export async function onRequestGet(context) {
     const repositories = await fetchAllRepositories(env, owner);
     const ranked = topRepositories(repositories, 10);
 
-    const [pullRequestResult, issueResult, recentChanges, changelogs, releases] = await Promise.all([
+    const [pullRequestResult, issueResult, recentChanges, changelogs, releases, workflowHealth, rateLimit] = await Promise.all([
       fetchOpenWork(env, owner, "pr", 10),
       fetchOpenWork(env, owner, "issue", 10),
       fetchRecentChanges(env, owner, ranked),
       fetchChangelogs(env, owner, ranked),
       fetchReleases(env, owner, ranked),
+      fetchWorkflowHealth(env, owner, ranked),
+      fetchRateLimit(env),
     ]);
 
     const normalizedRepositories = repositories
       .map((repository) => normalizeRepository(repository))
       .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
+
+    const repositoryAttention = buildRepositoryAttention(ranked, changelogs, workflowHealth.items);
+    const dataHealth = {
+      status: workflowHealth.unavailable > 0 || !rateLimit ? "partial" : "complete",
+      workflowRepositoriesChecked: workflowHealth.checked,
+      workflowRepositoriesUnavailable: workflowHealth.unavailable,
+      rateLimitAvailable: Boolean(rateLimit),
+    };
 
     return json({
       generatedAt: new Date().toISOString(),
@@ -66,6 +79,10 @@ export async function onRequestGet(context) {
       mode: "read-only",
       summary: summarizeRepositories(repositories, pullRequestResult.total, issueResult.total),
       topRepositories: ranked,
+      repositoryAttention,
+      workflowHealth: workflowHealth.items,
+      rateLimit,
+      dataHealth,
       recentChanges,
       changelogs,
       releases,

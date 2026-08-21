@@ -2,6 +2,32 @@
 
 All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git history remains authoritative for exact commits and pull requests.
 
+## 0.2.0-dev — 2026-08-21
+
+### Added
+
+- Repository Attention surface for explainable operational signals across the Top 10 active repositories.
+- Critical attention for latest failed/cancelled/timed-out/action-required/startup-failure/stale workflow conclusions.
+- Review attention for ranked repositories with more than 90 days since the latest push or at least 15 GitHub-reported open issues/pull requests.
+- Informational attention when no repository-local changelog is detected in the bounded probe paths.
+- Best-effort latest GitHub Actions workflow status for each Top 10 repository.
+- Explicit complete/partial data-coverage metadata so unavailable optional CI reads are not hidden.
+- Normalized GitHub core/search rate-limit metadata with browser-visible remaining core API budget.
+- Unit tests for workflow normalization, rate-limit normalization, CI-priority attention ordering, and stale-repository attention.
+
+### Changed
+
+- Dashboard API now isolates optional workflow and rate-limit failures instead of treating them as complete aggregation failures.
+- Glaze UI documentation now records the current Stable 1.3 baseline directly and keeps TV explicitly unsupported.
+- Architecture and deployment documentation now define the optional Actions-read permission, partial-data behavior, rate-limit visibility, and repository-attention model.
+- Dashboard version advanced to `0.2.0-dev` while remaining in the GoreeCloud Development lifecycle.
+
+### Security
+
+- GitHub Actions visibility remains read-only and fail-soft; lack of Actions read permission does not encourage broader token privileges merely to keep the primary dashboard usable.
+- Rate-limit information is normalized server-side and does not expose authorization material.
+- No GitHub mutation route or production deployment is introduced by this development entry.
+
 ## 0.1.0-dev — 2026-08-21
 
 ### Added

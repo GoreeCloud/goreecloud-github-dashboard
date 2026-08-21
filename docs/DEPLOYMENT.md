@@ -2,7 +2,7 @@
 
 ## Production status
 
-The foundation is not production-approved. This guide defines the intended private deployment boundary; it does not indicate that a live deployment has already been configured or accepted.
+The project remains in the GoreeCloud **Development** lifecycle. Source validation is green for the current development work, but production deployment and acceptance are not approved. This guide defines the intended private deployment boundary; it does not indicate that a live deployment has already been configured or accepted.
 
 ## Required architecture
 
@@ -28,7 +28,7 @@ For local work, store real secrets in `.dev.vars`; the repository ignores that f
 
 ## GitHub credential permissions
 
-Use the minimum read permissions needed by the current feature set. The foundation reads:
+Use the minimum read permissions needed by the current feature set. The dashboard reads:
 
 - Repository metadata.
 - Repository contents for changelog discovery.
@@ -36,6 +36,10 @@ Use the minimum read permissions needed by the current feature set. The foundati
 - Issues.
 - Pull requests.
 - Releases.
+- GitHub Actions workflow runs, when the credential is permitted to read them.
+- Authenticated rate-limit metadata.
+
+GitHub Actions read access is optional but recommended for the CI Health surface. If Actions data cannot be read, the dashboard must remain usable and explicitly report partial coverage.
 
 Do not grant the dashboard credential repository administration, contents write, issues write, pull-request write, workflow write, secrets, organization administration, or deletion permissions.
 
@@ -51,21 +55,27 @@ Do not grant the dashboard credential repository administration, contents write,
 8. Set `GITHUB_OWNER`.
 9. Only after the access boundary is confirmed, set `ACCESS_GATE_CONFIRMED=true`.
 10. Verify the dashboard loads expected private and public repository metadata without exposing the token in browser source, network payloads, logs, or generated assets.
+11. Confirm whether workflow visibility is complete or partial with the chosen least-privilege token.
+12. Confirm normalized GitHub API budget visibility is present, or that its absence is reported as partial coverage.
 
 ## Validation before production approval
 
 At minimum, validate:
 
-- `npm test` and `npm run check` pass at the exact release candidate head.
+- `npm test` and `npm run check` pass at the exact release-candidate head when the project reaches that lifecycle stage.
 - The deployed site is inaccessible to unauthenticated users.
 - The API fails closed if the GitHub token is removed.
 - The API fails closed if `ACCESS_GATE_CONFIRMED` is not true.
 - Browser developer tools show no GitHub credential or authorization header.
 - Private repository data is not cached publicly.
 - Security headers are present.
-- Mobile 390 x 844, Tablet 820 x 1180, Desktop 1280 x 900, and Wide Desktop 1600 x 1000 task flows are reviewed for the supported foundation targets.
+- Phone 390 x 844, Tablet 820 x 1180, Desktop 1280 x 900, and Wide Desktop 1600 x 1000 representative task flows are reviewed for the supported targets.
 - Keyboard focus, reduced motion, increased contrast, and forced-colors behavior remain usable.
-- Empty, GitHub-error, and rate-limit states are understandable and do not leak backend internals.
+- Repository Attention distinguishes critical, review, and informational signals without implying that every informational signal is a defect.
+- CI Health correctly shows success/failure/in-progress/no-run states where Actions read access exists.
+- Missing Actions read permission degrades to explicit partial coverage rather than a complete dashboard outage.
+- GitHub rate-limit metadata is shown when available and absent data is not silently represented as complete.
+- Empty, GitHub-error, optional-data, and rate-limit states are understandable and do not leak backend internals.
 - Rollback to the prior Pages deployment is available.
 
 TV is not an initial supported target and is not part of the initial acceptance claim.

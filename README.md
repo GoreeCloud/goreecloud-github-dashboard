@@ -1,23 +1,27 @@
 # GoreeCloud GitHub Dashboard
 
-Private, first-party GoreeCloud repository command center for recent changes, changelogs, top repositories, pull requests, issues, releases, and repository health.
+Private, first-party GoreeCloud repository command center for recent changes, changelogs, top repositories, repository attention, CI health, pull requests, issues, releases, API-budget visibility, and repository inventory.
 
 ## Status
 
-**Active development — foundation.** Source is not production-approved and no production deployment is implied by this repository.
+**Release lifecycle: Development.** Source is not production-approved and no production deployment is implied by this repository.
 
-The application is deliberately text-first while its unique canonical product icon/service mark remains unapproved. It follows Stable Glaze UI 1.3 semantics and incorporates the current 1.4 form-factor direction for Mobile, Tablet, and Desktop without claiming 1.4 acceptance. TV is not an initial supported target.
+The application is deliberately text-first while its unique canonical product icon/service mark remains unapproved. It follows the current Stable Glaze UI 1.3 baseline with purpose-built Phone, Tablet, Desktop, and Wide Desktop compositions. TV is explicitly unsupported in the initial project scope.
 
-## Foundation features
+## Current features
 
 - Recent commit activity across GoreeCloud repositories.
 - Top 10 repositories ranked by operational activity rather than popularity alone.
 - Total, public, and private repository counts.
+- Repository-attention signals for failed CI, stale active repositories, large open-work counts, and missing repository-local changelogs among the ranked repositories.
+- Best-effort latest GitHub Actions status for the Top 10 repositories.
+- Explicit complete/partial data-coverage state when optional workflow visibility is unavailable.
+- GitHub core API remaining-budget visibility when the rate-limit endpoint is available.
 - Open pull request and issue summaries.
 - Latest release visibility where repositories publish GitHub releases.
 - Repository-local changelog discovery using common `CHANGELOG.md` paths.
 - Searchable repository directory with visibility, language, activity, and open-work metadata.
-- Responsive Glaze UI layouts for Mobile, Tablet, Desktop, and Wide Desktop.
+- Responsive Glaze UI layouts for Phone, Tablet, Desktop, and Wide Desktop.
 - Light, dark, reduced-motion, increased-contrast, and forced-colors resilience.
 - Fail-closed private-data gate for Cloudflare Pages deployments.
 
@@ -33,6 +37,8 @@ The API refuses to return repository data unless all of the following are true:
 
 `ACCESS_GATE_CONFIRMED` is a deployment safety interlock, not an authentication mechanism. The external access layer remains mandatory before enabling private data.
 
+GitHub Actions visibility is deliberately best-effort. If the read-only credential does not include the permission needed to read workflow runs, the rest of the dashboard remains available and the interface reports partial coverage rather than failing the complete aggregation request.
+
 ## Local development
 
 The static interface can be opened directly from `public/` for visual work. Live GitHub data requires a Pages-compatible local runtime and server-side environment values.
@@ -47,14 +53,14 @@ Keep real values in local secret storage such as `.dev.vars`; that file is ignor
 
 ## Validation
 
-The repository intentionally has no runtime package dependencies in the foundation. With Node.js installed:
+The repository intentionally has no runtime package dependencies in the current foundation. With Node.js installed:
 
 ```bash
 npm test
 npm run check
 ```
 
-The validation workflow checks repository structure, JavaScript syntax, security invariants, and unit tests.
+The validation workflow checks repository structure, JavaScript syntax, security invariants, dashboard health surfaces, and unit tests for ranking, normalization, changelog extraction, workflow normalization, rate-limit normalization, and repository-attention behavior.
 
 ## Deployment
 
@@ -62,7 +68,7 @@ See `docs/DEPLOYMENT.md`. Do not publish the dashboard with private repository a
 
 ## Architecture
 
-See `docs/ARCHITECTURE.md` for the read-only aggregation model, rate-limit strategy, ranking model, changelog behavior, and security boundaries.
+See `docs/ARCHITECTURE.md` for the read-only aggregation model, partial-data behavior, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
 
 ## License
 

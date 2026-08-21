@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   activityScore,
+  buildRepositoryAttention,
   firstMeaningfulChangelogSection,
+  normalizeRateLimit,
   normalizeRepository,
+  normalizeWorkflowRun,
   summarizeRepositories,
   topRepositories,
 } from "../functions/lib/github.js";
@@ -85,4 +88,75 @@ test("changelog summary extracts the first meaningful release section", () => {
   assert.match(summary, /0\.2\.0/);
   assert.match(summary, /dashboard ranking/);
   assert.doesNotMatch(summary, /0\.1\.0/);
+});
+
+test("workflow normalization keeps only dashboard-safe run fields", () => {
+  const normalizedRepo = normalizeRepository(repository(), NOW);
+  const workflow = normalizeWorkflowRun(
+    {
+      name: "Validate",
+      status: "completed",
+      conclusion: "success",
+      event: "pull_request",
+      head_branch: "agent/example",
+      updated_at: "2026-08-21T17:30:00Z",
+      html_url: "https://github.com/GoreeCloud/example/actions/runs/1",
+      token: "must-not-pass-through",
+    },
+    normalizedRepo,
+  );
+
+  assert.equal(workflow.repository, "example");
+  assert.equal(workflow.conclusion, "success");
+  assert.equal(workflow.branch, "agent/example");
+  assert.equal(Object.hasOwn(workflow, "token"), false);
+});
+
+test("rate-limit normalization exposes bounded resource metadata", () => {
+  const normalized = normalizeRateLimit({
+    resources: {
+      core: { limit: 5000, used: 123, remaining: 4877, reset: 1787338800 },
+      search: { limit: 30, used: 2, remaining: 28, reset: 1787335200 },
+    },
+  });
+
+  assert.equal(normalized.core.limit, 5000);
+  assert.equal(normalized.core.remaining, 4877);
+  assert.equal(normalized.search.remaining, 28);
+  assert.match(normalized.core.resetAt, /^2026-/);
+});
+
+test("repository attention prioritizes failing CI over informational signals", () => {
+  const failingRepo = normalizeRepository(repository({ name: "failing" }), NOW);
+  const quietRepo = normalizeRepository(repository({ name: "quiet", open_issues_count: 0 }), NOW);
+  const attention = buildRepositoryAttention(
+    [quietRepo, failingRepo],
+    [{ repository: "quiet" }],
+    [
+      { repository: "quiet", conclusion: "success" },
+      { repository: "failing", conclusion: "failure" },
+    ],
+    NOW,
+  );
+
+  assert.equal(attention[0].repository, "failing");
+  assert.equal(attention[0].severity, "critical");
+  assert.match(attention[0].reasons.join(" "), /Latest CI concluded failure/);
+});
+
+test("stale ranked repositories surface a review signal", () => {
+  const staleRepo = normalizeRepository(
+    repository({ name: "stale", pushed_at: "2026-01-01T00:00:00Z", open_issues_count: 0 }),
+    NOW,
+  );
+  const attention = buildRepositoryAttention(
+    [staleRepo],
+    [{ repository: "stale" }],
+    [{ repository: "stale", conclusion: "success" }],
+    NOW,
+  );
+
+  assert.equal(attention.length, 1);
+  assert.equal(attention[0].severity, "warning");
+  assert.match(attention[0].reasons.join(" "), /No repository push/);
 });

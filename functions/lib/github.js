@@ -1,19 +1,24 @@
 const API_ROOT = "https://api.github.com";
 const API_VERSION = "2022-11-28";
 const CHANGELOG_PATHS = ["CHANGELOG.md", "docs/CHANGELOG.md", "changelog.md"];
+const FAILURE_CONCLUSIONS = new Set(["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"]);
+
+function ageDays(value, now = Date.now()) {
+  const timestamp = Date.parse(value || 0);
+  return Number.isFinite(timestamp) ? Math.max(0, (now - timestamp) / 86_400_000) : 3650;
+}
 
 export function activityScore(repository, now = Date.now()) {
-  const pushedAt = Date.parse(repository.pushed_at || repository.updated_at || 0);
-  const ageDays = Number.isFinite(pushedAt) ? Math.max(0, (now - pushedAt) / 86_400_000) : 3650;
+  const days = ageDays(repository.pushed_at || repository.updated_at, now);
 
   let recency = 0;
-  if (ageDays <= 1) recency = 100;
-  else if (ageDays <= 3) recency = 86;
-  else if (ageDays <= 7) recency = 72;
-  else if (ageDays <= 14) recency = 58;
-  else if (ageDays <= 30) recency = 42;
-  else if (ageDays <= 90) recency = 24;
-  else if (ageDays <= 180) recency = 10;
+  if (days <= 1) recency = 100;
+  else if (days <= 3) recency = 86;
+  else if (days <= 7) recency = 72;
+  else if (days <= 14) recency = 58;
+  else if (days <= 30) recency = 42;
+  else if (days <= 90) recency = 24;
+  else if (days <= 180) recency = 10;
 
   const openWork = Math.min(Number(repository.open_issues_count || 0) * 2, 20);
   const stars = Math.min(Number(repository.stargazers_count || 0) * 0.5, 10);
@@ -88,11 +93,94 @@ export function firstMeaningfulChangelogSection(markdown) {
   return collected.join(" ").replace(/\s+/g, " ").trim().slice(0, 520);
 }
 
+export function normalizeWorkflowRun(run, repository) {
+  return {
+    repository: repository.name,
+    title: run?.name || "GitHub Actions",
+    status: run?.status || "unknown",
+    conclusion: run?.conclusion || null,
+    event: run?.event || null,
+    branch: run?.head_branch || repository.defaultBranch || null,
+    updatedAt: run?.updated_at || run?.run_started_at || run?.created_at || null,
+    url: run?.html_url || repository.url,
+  };
+}
+
+function normalizeRateResource(resource) {
+  if (!resource) return null;
+  const reset = Number(resource.reset || 0);
+  return {
+    limit: Number(resource.limit || 0),
+    used: Number(resource.used || 0),
+    remaining: Number(resource.remaining || 0),
+    resetAt: reset > 0 ? new Date(reset * 1000).toISOString() : null,
+  };
+}
+
+export function normalizeRateLimit(data) {
+  return {
+    core: normalizeRateResource(data?.resources?.core),
+    search: normalizeRateResource(data?.resources?.search),
+  };
+}
+
+export function buildRepositoryAttention(rankedRepositories, changelogs = [], workflowItems = [], now = Date.now()) {
+  const changelogRepositories = new Set(changelogs.map((item) => item.repository));
+  const workflows = new Map(workflowItems.map((item) => [item.repository, item]));
+  const severityOrder = { critical: 3, warning: 2, info: 1 };
+
+  return rankedRepositories
+    .map((repo) => {
+      const reasons = [];
+      let severity = "info";
+      const workflow = workflows.get(repo.name);
+      const days = Math.floor(ageDays(repo.updatedAt, now));
+
+      if (workflow?.conclusion && FAILURE_CONCLUSIONS.has(workflow.conclusion)) {
+        severity = "critical";
+        reasons.push(`Latest CI concluded ${workflow.conclusion.replaceAll("_", " ")}.`);
+      }
+
+      if (days > 90) {
+        if (severity !== "critical") severity = "warning";
+        reasons.push(`No repository push in ${days} days.`);
+      }
+
+      if (repo.openIssues >= 15) {
+        if (severity === "info") severity = "warning";
+        reasons.push(`${repo.openIssues} open issues or pull requests reported by GitHub.`);
+      }
+
+      if (!changelogRepositories.has(repo.name)) {
+        reasons.push("No repository-local changelog detected in the probed paths.");
+      }
+
+      return reasons.length
+        ? {
+            repository: repo.name,
+            title: repo.name,
+            severity,
+            reasons,
+            url: repo.url,
+            updatedAt: repo.updatedAt,
+            activityScore: repo.activityScore,
+          }
+        : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => (
+      severityOrder[b.severity] - severityOrder[a.severity]
+      || b.activityScore - a.activityScore
+      || Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0)
+    ))
+    .slice(0, 12);
+}
+
 function headers(env) {
   return {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-    "User-Agent": "GoreeCloud-GitHub-Dashboard/0.1",
+    "User-Agent": "GoreeCloud-GitHub-Dashboard/0.2",
     "X-GitHub-Api-Version": API_VERSION,
   };
 }
@@ -252,4 +340,46 @@ export async function fetchReleases(env, owner, rankedRepositories) {
     .map((result) => result.value)
     .sort((a, b) => Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0))
     .slice(0, 10);
+}
+
+export async function fetchWorkflowHealth(env, owner, rankedRepositories) {
+  const candidates = rankedRepositories.slice(0, 10);
+  const results = await Promise.allSettled(
+    candidates.map(async (repo) => {
+      const data = await githubRequest(
+        env,
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo.name)}/actions/runs?per_page=1`,
+      );
+      const run = data?.workflow_runs?.[0];
+      return run
+        ? normalizeWorkflowRun(run, repo)
+        : {
+            repository: repo.name,
+            title: "No workflow run",
+            status: "none",
+            conclusion: null,
+            event: null,
+            branch: repo.defaultBranch || null,
+            updatedAt: null,
+            url: `${repo.url}/actions`,
+          };
+    }),
+  );
+
+  return {
+    checked: candidates.length,
+    unavailable: results.filter((result) => result.status === "rejected").length,
+    items: results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => result.value),
+  };
+}
+
+export async function fetchRateLimit(env) {
+  try {
+    const data = await githubRequest(env, "/rate_limit");
+    return normalizeRateLimit(data);
+  } catch {
+    return null;
+  }
 }
