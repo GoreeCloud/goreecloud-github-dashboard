@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#10131a" />
+    <meta
+      name="description"
+      content="Private GoreeCloud dashboard for GitHub repository activity, changelogs, pull requests, issues, releases, and repository health."
+    />
+    <title>GoreeCloud GitHub Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to dashboard</a>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand-block">
+          <div class="brand-wordmark">GoreeCloud</div>
+          <div class="brand-product">GitHub Dashboard</div>
+        </div>
+
+        <nav class="nav-list">
+          <a class="nav-item is-active" href="#overview" aria-current="page">Overview</a>
+          <a class="nav-item" href="#activity">Activity</a>
+          <a class="nav-item" href="#repositories">Repositories</a>
+          <a class="nav-item" href="#changelogs">Changelogs</a>
+          <a class="nav-item" href="#open-work">Open work</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="sidebar-status">Waiting for data</span>
+        </div>
+      </aside>
+
+      <main id="main" class="main-content" tabindex="-1">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Repository command center</p>
+            <h1>GitHub at a glance</h1>
+          </div>
+          <div class="topbar-actions">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle appearance" title="Toggle appearance">◐</button>
+            <button id="refresh-button" class="button button-primary" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section id="overview" class="hero panel panel-glaze" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <span class="hero-kicker">Private operational view</span>
+            <h2 id="hero-title">Recent work, repository health, and changelogs in one place.</h2>
+            <p>
+              Ranked around current activity so the repositories that need attention rise naturally instead of being sorted only by stars.
+            </p>
+          </div>
+          <div class="hero-meta">
+            <span class="pill" id="generated-at">Not refreshed yet</span>
+            <span class="pill pill-success" id="api-state">Secure gate pending</span>
+          </div>
+        </section>
+
+        <section class="stats-grid" aria-label="Repository summary">
+          <article class="stat-card panel">
+            <span class="stat-label">Repositories</span>
+            <strong class="stat-value" id="stat-total">—</strong>
+            <span class="stat-caption">Accessible GoreeCloud repositories</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Private</span>
+            <strong class="stat-value" id="stat-private">—</strong>
+            <span class="stat-caption">Protected source and operations</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Public</span>
+            <strong class="stat-value" id="stat-public">—</strong>
+            <span class="stat-caption">Open-source repositories</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Open work</span>
+            <strong class="stat-value" id="stat-open-work">—</strong>
+            <span class="stat-caption">Pull requests plus issues</span>
+          </article>
+        </section>
+
+        <div id="dashboard-alert" class="alert" role="status" aria-live="polite" hidden></div>
+
+        <section id="activity" class="content-grid content-grid-primary" aria-label="Activity dashboard">
+          <article class="panel section-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Across repositories</p>
+                <h2>Recent changes</h2>
+              </div>
+              <span class="section-count" id="recent-count">0</span>
+            </div>
+            <div id="recent-changes" class="timeline" aria-live="polite">
+              <div class="empty-state">Refresh to load recent commit activity.</div>
+            </div>
+          </article>
+
+          <article class="panel section-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Activity score</p>
+                <h2>Top 10 repositories</h2>
+              </div>
+              <span class="section-count" id="top-count">0</span>
+            </div>
+            <ol id="top-repositories" class="ranking-list">
+              <li class="empty-state">Refresh to rank repositories.</li>
+            </ol>
+          </article>
+        </section>
+
+        <section id="changelogs" class="content-grid" aria-label="Changelog and release dashboard">
+          <article class="panel section-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Repository-local records</p>
+                <h2>Changelog radar</h2>
+              </div>
+              <span class="section-count" id="changelog-count">0</span>
+            </div>
+            <div id="changelog-list" class="card-list">
+              <div class="empty-state">No changelog data loaded.</div>
+            </div>
+          </article>
+
+          <article class="panel section-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Published milestones</p>
+                <h2>Latest releases</h2>
+              </div>
+              <span class="section-count" id="release-count">0</span>
+            </div>
+            <div id="release-list" class="card-list">
+              <div class="empty-state">No release data loaded.</div>
+            </div>
+          </article>
+        </section>
+
+        <section id="open-work" class="content-grid" aria-label="Open GitHub work">
+          <article class="panel section-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Review queue</p>
+                <h2>Open pull requests</h2>
+              </div>
+              <span class="section-count" id="pr-count">0</span>
+            </div>
+            <div id="pr-list" class="card-list">
+              <div class="empty-state">No pull-request data loaded.</div>
+            </div>
+          </article>
+
+          <article class="panel section-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Attention queue</p>
+                <h2>Open issues</h2>
+              </div>
+              <span class="section-count" id="issue-count">0</span>
+            </div>
+            <div id="issue-list" class="card-list">
+              <div class="empty-state">No issue data loaded.</div>
+            </div>
+          </article>
+        </section>
+
+        <section id="repositories" class="panel section-panel repository-section" aria-labelledby="repo-heading">
+          <div class="section-heading repository-heading">
+            <div>
+              <p class="eyebrow">Complete accessible inventory</p>
+              <h2 id="repo-heading">Repository directory</h2>
+            </div>
+            <label class="search-field">
+              <span class="sr-only">Search repositories</span>
+              <input id="repository-search" type="search" placeholder="Search repositories" autocomplete="off" />
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Repository</th>
+                  <th scope="col">Visibility</th>
+                  <th scope="col">Language</th>
+                  <th scope="col">Updated</th>
+                  <th scope="col">Open</th>
+                </tr>
+              </thead>
+              <tbody id="repository-table-body">
+                <tr>
+                  <td colspan="5" class="empty-state">Refresh to load the repository directory.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer class="page-footer">
+          <span>GoreeCloud GitHub Dashboard · development foundation</span>
+          <span>Glaze UI · read-only GitHub integration</span>
+        </footer>
+      </main>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="#overview">Overview</a>
+        <a href="#activity">Activity</a>
+        <a href="#repositories">Repos</a>
+        <a href="#open-work">Work</a>
+      </nav>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

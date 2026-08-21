@@ -1,0 +1,21 @@
+# Local secrets
+.dev.vars
+.env
+.env.*
+!.env.example
+
+# Node / tooling
+node_modules/
+.npm/
+.wrangler/
+.dev/
+coverage/
+
+# Editors / operating systems
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Generated output
+dist/

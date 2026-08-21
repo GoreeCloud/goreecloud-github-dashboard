@@ -1,5 +1,69 @@
 # GoreeCloud GitHub Dashboard
 
-Private, first-party GoreeCloud dashboard for repository activity, recent changes, changelogs, pull requests, issues, releases, and repository health.
+Private, first-party GoreeCloud repository command center for recent changes, changelogs, top repositories, pull requests, issues, releases, and repository health.
 
-> Status: foundation bootstrap. Runtime and production deployment are not yet approved.
+## Status
+
+**Active development — foundation.** Source is not production-approved and no production deployment is implied by this repository.
+
+The application is deliberately text-first while its unique canonical product icon/service mark remains unapproved. It follows Stable Glaze UI 1.3 semantics and incorporates the current 1.4 form-factor direction for Mobile, Tablet, and Desktop without claiming 1.4 acceptance. TV is not an initial supported target.
+
+## Foundation features
+
+- Recent commit activity across GoreeCloud repositories.
+- Top 10 repositories ranked by operational activity rather than popularity alone.
+- Total, public, and private repository counts.
+- Open pull request and issue summaries.
+- Latest release visibility where repositories publish GitHub releases.
+- Repository-local changelog discovery using common `CHANGELOG.md` paths.
+- Searchable repository directory with visibility, language, activity, and open-work metadata.
+- Responsive Glaze UI layouts for Mobile, Tablet, Desktop, and Wide Desktop.
+- Light, dark, reduced-motion, increased-contrast, and forced-colors resilience.
+- Fail-closed private-data gate for Cloudflare Pages deployments.
+
+## Privacy and security boundary
+
+This dashboard is designed to display private repository metadata. The GitHub credential must therefore stay server-side in a Cloudflare Pages Function secret and must be read-only. It must never be embedded in browser JavaScript, HTML, build output, screenshots, documentation, or source control.
+
+The API refuses to return repository data unless all of the following are true:
+
+1. `GITHUB_TOKEN` is configured as a server-side secret.
+2. `GITHUB_OWNER` identifies the intended account (default: `GoreeCloud`).
+3. `ACCESS_GATE_CONFIRMED=true` is configured **only after** the deployed site is protected by an authenticated private-access layer such as Cloudflare Access.
+
+`ACCESS_GATE_CONFIRMED` is a deployment safety interlock, not an authentication mechanism. The external access layer remains mandatory before enabling private data.
+
+## Local development
+
+The static interface can be opened directly from `public/` for visual work. Live GitHub data requires a Pages-compatible local runtime and server-side environment values.
+
+```text
+GITHUB_OWNER=GoreeCloud
+GITHUB_TOKEN=<read-only secret>
+ACCESS_GATE_CONFIRMED=true
+```
+
+Keep real values in local secret storage such as `.dev.vars`; that file is ignored by Git.
+
+## Validation
+
+The repository intentionally has no runtime package dependencies in the foundation. With Node.js installed:
+
+```bash
+npm test
+npm run check
+```
+
+The validation workflow checks repository structure, JavaScript syntax, security invariants, and unit tests.
+
+## Deployment
+
+See `docs/DEPLOYMENT.md`. Do not publish the dashboard with private repository access until its private-access boundary is configured and verified.
+
+## Architecture
+
+See `docs/ARCHITECTURE.md` for the read-only aggregation model, rate-limit strategy, ranking model, changelog behavior, and security boundaries.
+
+## License
+
+MIT. See `LICENSE`.
