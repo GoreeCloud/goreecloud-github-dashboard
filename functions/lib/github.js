@@ -8,6 +8,17 @@ function ageDays(value, now = Date.now()) {
   return Number.isFinite(timestamp) ? Math.max(0, (now - timestamp) / 86_400_000) : 3650;
 }
 
+function settledCollection(results, checked, flatten = false) {
+  const fulfilled = results.filter((result) => result.status === "fulfilled");
+  return {
+    checked,
+    unavailable: results.length - fulfilled.length,
+    items: flatten
+      ? fulfilled.flatMap((result) => result.value || [])
+      : fulfilled.map((result) => result.value).filter(Boolean),
+  };
+}
+
 export function activityScore(repository, now = Date.now()) {
   const days = ageDays(repository.pushed_at || repository.updated_at, now);
 
@@ -245,10 +256,11 @@ export async function fetchRecentChanges(env, owner, rankedRepositories) {
     }),
   );
 
-  return results
-    .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
+  const collection = settledCollection(results, candidates.length, true);
+  collection.items = collection.items
     .sort((a, b) => Date.parse(b.date || 0) - Date.parse(a.date || 0))
     .slice(0, 16);
+  return collection;
 }
 
 export async function fetchOpenWork(env, owner, type, limit = 10) {
@@ -290,8 +302,9 @@ async function fetchFileContent(env, owner, repository, path) {
 }
 
 export async function fetchChangelogs(env, owner, rankedRepositories) {
+  const candidates = rankedRepositories.slice(0, 10);
   const results = await Promise.allSettled(
-    rankedRepositories.slice(0, 10).map(async (repo) => {
+    candidates.map(async (repo) => {
       for (const path of CHANGELOG_PATHS) {
         const content = await fetchFileContent(env, owner, repo.name, path);
         if (content) {
@@ -309,15 +322,15 @@ export async function fetchChangelogs(env, owner, rankedRepositories) {
     }),
   );
 
-  return results
-    .filter((result) => result.status === "fulfilled" && result.value)
-    .map((result) => result.value)
-    .slice(0, 10);
+  const collection = settledCollection(results, candidates.length);
+  collection.items = collection.items.slice(0, 10);
+  return collection;
 }
 
 export async function fetchReleases(env, owner, rankedRepositories) {
+  const candidates = rankedRepositories.slice(0, 10);
   const results = await Promise.allSettled(
-    rankedRepositories.slice(0, 10).map(async (repo) => {
+    candidates.map(async (repo) => {
       const release = await githubRequest(
         env,
         `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo.name)}/releases/latest`,
@@ -335,11 +348,11 @@ export async function fetchReleases(env, owner, rankedRepositories) {
     }),
   );
 
-  return results
-    .filter((result) => result.status === "fulfilled" && result.value)
-    .map((result) => result.value)
+  const collection = settledCollection(results, candidates.length);
+  collection.items = collection.items
     .sort((a, b) => Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0))
     .slice(0, 10);
+  return collection;
 }
 
 export async function fetchWorkflowHealth(env, owner, rankedRepositories) {
@@ -366,13 +379,7 @@ export async function fetchWorkflowHealth(env, owner, rankedRepositories) {
     }),
   );
 
-  return {
-    checked: candidates.length,
-    unavailable: results.filter((result) => result.status === "rejected").length,
-    items: results
-      .filter((result) => result.status === "fulfilled")
-      .map((result) => result.value),
-  };
+  return settledCollection(results, candidates.length);
 }
 
 export async function fetchRateLimit(env) {

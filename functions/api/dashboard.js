@@ -51,7 +51,7 @@ export async function onRequestGet(context) {
     const repositories = await fetchAllRepositories(env, owner);
     const ranked = topRepositories(repositories, 10);
 
-    const [pullRequestResult, issueResult, recentChanges, changelogs, releases, workflowHealth, rateLimit] = await Promise.all([
+    const [pullRequestResult, issueResult, recentChangeResult, changelogResult, releaseResult, workflowHealth, rateLimit] = await Promise.all([
       fetchOpenWork(env, owner, "pr", 10),
       fetchOpenWork(env, owner, "issue", 10),
       fetchRecentChanges(env, owner, ranked),
@@ -65,11 +65,24 @@ export async function onRequestGet(context) {
       .map((repository) => normalizeRepository(repository))
       .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
 
-    const repositoryAttention = buildRepositoryAttention(ranked, changelogs, workflowHealth.items);
+    const repositoryAttention = buildRepositoryAttention(ranked, changelogResult.items, workflowHealth.items);
+    const unavailableReads = (
+      workflowHealth.unavailable
+      + recentChangeResult.unavailable
+      + changelogResult.unavailable
+      + releaseResult.unavailable
+    );
     const dataHealth = {
-      status: workflowHealth.unavailable > 0 || !rateLimit ? "partial" : "complete",
+      status: unavailableReads > 0 || !rateLimit ? "partial" : "complete",
+      unavailableReads,
       workflowRepositoriesChecked: workflowHealth.checked,
       workflowRepositoriesUnavailable: workflowHealth.unavailable,
+      recentChangeRepositoriesChecked: recentChangeResult.checked,
+      recentChangeRepositoriesUnavailable: recentChangeResult.unavailable,
+      changelogRepositoriesChecked: changelogResult.checked,
+      changelogRepositoriesUnavailable: changelogResult.unavailable,
+      releaseRepositoriesChecked: releaseResult.checked,
+      releaseRepositoriesUnavailable: releaseResult.unavailable,
       rateLimitAvailable: Boolean(rateLimit),
     };
 
@@ -83,9 +96,9 @@ export async function onRequestGet(context) {
       workflowHealth: workflowHealth.items,
       rateLimit,
       dataHealth,
-      recentChanges,
-      changelogs,
-      releases,
+      recentChanges: recentChangeResult.items,
+      changelogs: changelogResult.items,
+      releases: releaseResult.items,
       pullRequests: pullRequestResult.items,
       issues: issueResult.items,
       repositories: normalizedRepositories,

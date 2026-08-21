@@ -62,7 +62,7 @@ Critical signals sort ahead of review and informational signals. The model is in
 
 The dashboard probes only the latest workflow run for each Top 10 repository. This is a bounded health indicator rather than an Actions replacement.
 
-Actions visibility is best-effort. If the read-only credential cannot read workflow runs for one or more repositories, those failures are isolated with `Promise.allSettled`. The primary dashboard continues to render, `dataHealth.status` becomes `partial`, and the UI reports how many Top 10 workflow reads were unavailable.
+Actions visibility is best-effort. If the read-only credential cannot read workflow runs for one or more repositories, those failures are isolated with `Promise.allSettled`. The primary dashboard continues to render, `dataHealth.status` becomes `partial`, and the UI reports partial coverage.
 
 A repository with no workflow run is represented as an ordinary `none` state. It is not treated as an API failure.
 
@@ -78,20 +78,21 @@ It extracts a short summary from the first meaningful changelog section and link
 
 The separate `goreecloud-changelogs` application remains independently governed. The dashboard does not invent changelog entries that are not present in the probed GitHub repository files and does not make the changelog application an undocumented runtime dependency.
 
-## Rate-limit and data-coverage model
+## Partial-data and rate-limit model
+
+Repository fan-out that is useful but not authoritative for the entire page is fail-soft. Recent-commit reads, changelog probes, release probes, and workflow-run reads use per-repository settled results. One repository-specific upstream failure therefore does not erase successful results from the other repositories.
+
+Each bounded collection returns:
+
+- `checked`: number of repositories selected for that probe.
+- `unavailable`: number of repository reads that rejected.
+- `items`: normalized successful results.
+
+The API combines those unavailable counts into `dataHealth.unavailableReads`. `dataHealth.status` is `partial` whenever any bounded repository read is unavailable or normalized rate-limit information cannot be read. It is `complete` only when those optional probes return without rejected repository reads and the rate-limit resource is available.
 
 The server reads GitHub's `/rate_limit` endpoint when possible and returns normalized `core` and `search` resource values: limit, used, remaining, and reset time. The browser displays only the normalized remaining core budget.
 
-Rate-limit visibility itself is fail-soft. If the endpoint is unavailable, `rateLimit` is `null` and the dashboard reports partial data coverage rather than failing the entire refresh.
-
-`dataHealth` currently records:
-
-- `status`: `complete` or `partial`.
-- Number of ranked repositories checked for workflow status.
-- Number of workflow reads unavailable.
-- Whether normalized rate-limit information was available.
-
-This prevents optional data from disappearing silently.
+This model prevents recent commits, changelogs, releases, workflow status, or rate-limit visibility from disappearing silently while the page implies complete coverage.
 
 ## Privacy boundary
 
@@ -109,7 +110,9 @@ The application never performs GitHub mutations.
 
 ## Failure behavior
 
-Core aggregation failures return a sanitized dashboard error and preserve the read-only boundary. Optional workflow and rate-limit failures degrade to explicit partial coverage. No token, upstream authorization header, private stack trace, or raw credential-bearing response is returned to the browser.
+Core account-wide failures, such as inability to enumerate the repository portfolio or query the primary open-work searches, return a sanitized dashboard error and preserve the read-only boundary. Repository-specific recent-commit, changelog, release, and workflow failures degrade to explicit partial coverage. Rate-limit visibility also fails soft.
+
+No token, upstream authorization header, private stack trace, or raw credential-bearing response is returned to the browser.
 
 A future short-lived server or edge cache may reduce GitHub API calls, but cached private data must remain inside the same authenticated private-access boundary and must expose freshness clearly.
 

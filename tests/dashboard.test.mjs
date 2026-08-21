@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   activityScore,
   buildRepositoryAttention,
+  fetchRateLimit,
+  fetchRecentChanges,
   firstMeaningfulChangelogSection,
   normalizeRateLimit,
   normalizeRepository,
@@ -159,4 +161,52 @@ test("stale ranked repositories surface a review signal", () => {
   assert.equal(attention.length, 1);
   assert.equal(attention[0].severity, "warning");
   assert.match(attention[0].reasons.join(" "), /No repository push/);
+});
+
+test("recent-change aggregation reports per-repository partial failures", async () => {
+  const originalFetch = globalThis.fetch;
+  const ranked = [
+    normalizeRepository(repository({ name: "good" }), NOW),
+    normalizeRepository(repository({ name: "unavailable" }), NOW),
+  ];
+
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("/good/commits")) {
+      return new Response(JSON.stringify([
+        {
+          sha: "abcdef123456",
+          html_url: "https://github.com/GoreeCloud/good/commit/abcdef1",
+          commit: {
+            message: "Validated commit",
+            author: { name: "GoreeCloud", date: "2026-08-21T17:00:00Z" },
+            committer: { date: "2026-08-21T17:00:00Z" },
+          },
+          author: { login: "GoreeCloud" },
+        },
+      ]), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response(JSON.stringify({ message: "temporary upstream error" }), { status: 503 });
+  };
+
+  try {
+    const result = await fetchRecentChanges({ GITHUB_TOKEN: "test-token" }, "GoreeCloud", ranked);
+    assert.equal(result.checked, 2);
+    assert.equal(result.unavailable, 1);
+    assert.equal(result.items.length, 1);
+    assert.equal(result.items[0].repository, "good");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rate-limit visibility fails soft without breaking the dashboard", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 503 });
+
+  try {
+    const result = await fetchRateLimit({ GITHUB_TOKEN: "test-token" });
+    assert.equal(result, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
