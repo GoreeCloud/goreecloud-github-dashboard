@@ -8,11 +8,15 @@ function ageDays(value, now = Date.now()) {
   return Number.isFinite(timestamp) ? Math.max(0, (now - timestamp) / 86_400_000) : 3650;
 }
 
-function settledCollection(results, checked, flatten = false) {
+function settledCollection(results, candidates, flatten = false) {
   const fulfilled = results.filter((result) => result.status === "fulfilled");
+  const unavailableRepositories = results.flatMap((result, index) => (
+    result.status === "rejected" && candidates[index]?.name ? [candidates[index].name] : []
+  ));
   return {
-    checked,
-    unavailable: results.length - fulfilled.length,
+    checked: candidates.length,
+    unavailable: unavailableRepositories.length,
+    unavailableRepositories,
     items: flatten
       ? fulfilled.flatMap((result) => result.value || [])
       : fulfilled.map((result) => result.value).filter(Boolean),
@@ -135,9 +139,17 @@ export function normalizeRateLimit(data) {
   };
 }
 
-export function buildRepositoryAttention(rankedRepositories, changelogs = [], workflowItems = [], now = Date.now()) {
+export function buildRepositoryAttention(
+  rankedRepositories,
+  changelogs = [],
+  workflowItems = [],
+  now = Date.now(),
+  coverage = {},
+) {
   const changelogRepositories = new Set(changelogs.map((item) => item.repository));
   const workflows = new Map(workflowItems.map((item) => [item.repository, item]));
+  const changelogUnavailable = new Set(coverage.changelogUnavailable || []);
+  const workflowUnavailable = new Set(coverage.workflowUnavailable || []);
   const severityOrder = { critical: 3, warning: 2, info: 1 };
 
   return rankedRepositories
@@ -150,6 +162,8 @@ export function buildRepositoryAttention(rankedRepositories, changelogs = [], wo
       if (workflow?.conclusion && FAILURE_CONCLUSIONS.has(workflow.conclusion)) {
         severity = "critical";
         reasons.push(`Latest CI concluded ${workflow.conclusion.replaceAll("_", " ")}.`);
+      } else if (workflowUnavailable.has(repo.name)) {
+        reasons.push("Latest CI status is unavailable in the current read coverage.");
       }
 
       if (days > 90) {
@@ -162,7 +176,9 @@ export function buildRepositoryAttention(rankedRepositories, changelogs = [], wo
         reasons.push(`${repo.openIssues} open issues or pull requests reported by GitHub.`);
       }
 
-      if (!changelogRepositories.has(repo.name)) {
+      if (changelogUnavailable.has(repo.name)) {
+        reasons.push("Changelog status is unavailable in the current read coverage.");
+      } else if (!changelogRepositories.has(repo.name)) {
         reasons.push("No repository-local changelog detected in the probed paths.");
       }
 
@@ -256,7 +272,7 @@ export async function fetchRecentChanges(env, owner, rankedRepositories) {
     }),
   );
 
-  const collection = settledCollection(results, candidates.length, true);
+  const collection = settledCollection(results, candidates, true);
   collection.items = collection.items
     .sort((a, b) => Date.parse(b.date || 0) - Date.parse(a.date || 0))
     .slice(0, 16);
@@ -322,7 +338,7 @@ export async function fetchChangelogs(env, owner, rankedRepositories) {
     }),
   );
 
-  const collection = settledCollection(results, candidates.length);
+  const collection = settledCollection(results, candidates);
   collection.items = collection.items.slice(0, 10);
   return collection;
 }
@@ -348,7 +364,7 @@ export async function fetchReleases(env, owner, rankedRepositories) {
     }),
   );
 
-  const collection = settledCollection(results, candidates.length);
+  const collection = settledCollection(results, candidates);
   collection.items = collection.items
     .sort((a, b) => Date.parse(b.publishedAt || 0) - Date.parse(a.publishedAt || 0))
     .slice(0, 10);
@@ -379,7 +395,7 @@ export async function fetchWorkflowHealth(env, owner, rankedRepositories) {
     }),
   );
 
-  return settledCollection(results, candidates.length);
+  return settledCollection(results, candidates);
 }
 
 export async function fetchRateLimit(env) {

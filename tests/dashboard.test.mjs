@@ -163,6 +163,25 @@ test("stale ranked repositories surface a review signal", () => {
   assert.match(attention[0].reasons.join(" "), /No repository push/);
 });
 
+test("attention distinguishes unavailable changelog coverage from a confirmed missing changelog", () => {
+  const normalizedRepo = normalizeRepository(repository({ name: "coverage-gap", open_issues_count: 0 }), NOW);
+  const attention = buildRepositoryAttention(
+    [normalizedRepo],
+    [],
+    [],
+    NOW,
+    {
+      changelogUnavailable: ["coverage-gap"],
+      workflowUnavailable: ["coverage-gap"],
+    },
+  );
+
+  assert.equal(attention.length, 1);
+  assert.match(attention[0].reasons.join(" "), /Changelog status is unavailable/);
+  assert.match(attention[0].reasons.join(" "), /Latest CI status is unavailable/);
+  assert.doesNotMatch(attention[0].reasons.join(" "), /No repository-local changelog detected/);
+});
+
 test("recent-change aggregation reports per-repository partial failures", async () => {
   const originalFetch = globalThis.fetch;
   const ranked = [
@@ -192,6 +211,7 @@ test("recent-change aggregation reports per-repository partial failures", async 
     const result = await fetchRecentChanges({ GITHUB_TOKEN: "test-token" }, "GoreeCloud", ranked);
     assert.equal(result.checked, 2);
     assert.equal(result.unavailable, 1);
+    assert.deepEqual(result.unavailableRepositories, ["unavailable"]);
     assert.equal(result.items.length, 1);
     assert.equal(result.items[0].repository, "good");
   } finally {

@@ -65,7 +65,16 @@ export async function onRequestGet(context) {
       .map((repository) => normalizeRepository(repository))
       .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
 
-    const repositoryAttention = buildRepositoryAttention(ranked, changelogResult.items, workflowHealth.items);
+    const repositoryAttention = buildRepositoryAttention(
+      ranked,
+      changelogResult.items,
+      workflowHealth.items,
+      Date.now(),
+      {
+        changelogUnavailable: changelogResult.unavailableRepositories,
+        workflowUnavailable: workflowHealth.unavailableRepositories,
+      },
+    );
     const unavailableReads = (
       workflowHealth.unavailable
       + recentChangeResult.unavailable

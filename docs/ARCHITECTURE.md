@@ -54,7 +54,8 @@ Current signals are deliberately understandable:
 - A latest workflow conclusion such as `failure`, `cancelled`, `timed_out`, `action_required`, `startup_failure`, or `stale` is treated as critical attention.
 - A ranked repository with no push for more than 90 days is marked for review.
 - A ranked repository reporting at least 15 open issues/pull requests through GitHub's repository count receives a review signal.
-- Absence of a repository-local changelog in the probed paths is informational.
+- Absence of a repository-local changelog in successfully probed paths is informational.
+- A failed workflow or changelog probe is represented as unavailable coverage, not misrepresented as a successful CI state or a confirmed missing changelog.
 
 Critical signals sort ahead of review and informational signals. The model is intentionally small and explainable; future health scoring must not become an opaque substitute for the underlying GitHub evidence.
 
@@ -62,9 +63,9 @@ Critical signals sort ahead of review and informational signals. The model is in
 
 The dashboard probes only the latest workflow run for each Top 10 repository. This is a bounded health indicator rather than an Actions replacement.
 
-Actions visibility is best-effort. If the read-only credential cannot read workflow runs for one or more repositories, those failures are isolated with `Promise.allSettled`. The primary dashboard continues to render, `dataHealth.status` becomes `partial`, and the UI reports partial coverage.
+Actions visibility is best-effort. If the read-only credential cannot read workflow runs for one or more repositories, those failures are isolated with `Promise.allSettled`. The primary dashboard continues to render, `dataHealth.status` becomes `partial`, and the affected repository can carry an explicit CI-coverage-unavailable attention reason.
 
-A repository with no workflow run is represented as an ordinary `none` state. It is not treated as an API failure.
+A repository with no workflow run after a successful Actions read is represented as an ordinary `none` state. It is not treated as an API failure.
 
 ## Changelog model
 
@@ -74,7 +75,7 @@ The dashboard checks these paths, in order:
 - `docs/CHANGELOG.md`
 - `changelog.md`
 
-It extracts a short summary from the first meaningful changelog section and links to the authoritative file in GitHub. Absence of a repository-local changelog is not an application failure; it may appear as an informational repository-attention signal for the ranked set.
+It extracts a short summary from the first meaningful changelog section and links to the authoritative file in GitHub. A successful probe that finds no repository-local changelog may appear as an informational attention signal. A rejected changelog probe is instead recorded as unavailable coverage so the dashboard does not claim absence without evidence.
 
 The separate `goreecloud-changelogs` application remains independently governed. The dashboard does not invent changelog entries that are not present in the probed GitHub repository files and does not make the changelog application an undocumented runtime dependency.
 
@@ -82,13 +83,16 @@ The separate `goreecloud-changelogs` application remains independently governed.
 
 Repository fan-out that is useful but not authoritative for the entire page is fail-soft. Recent-commit reads, changelog probes, release probes, and workflow-run reads use per-repository settled results. One repository-specific upstream failure therefore does not erase successful results from the other repositories.
 
-Each bounded collection returns:
+Each bounded collection retains:
 
 - `checked`: number of repositories selected for that probe.
 - `unavailable`: number of repository reads that rejected.
+- `unavailableRepositories`: repository names associated with rejected reads, retained server-side for correct derived attention behavior.
 - `items`: normalized successful results.
 
-The API combines those unavailable counts into `dataHealth.unavailableReads`. `dataHealth.status` is `partial` whenever any bounded repository read is unavailable or normalized rate-limit information cannot be read. It is `complete` only when those optional probes return without rejected repository reads and the rate-limit resource is available.
+The public dashboard API does not need to expose the internal unavailable-repository name arrays separately because the repository inventory is already private dashboard data and the browser only needs aggregate coverage state. The server uses those names to avoid confusing an unavailable probe with confirmed absence.
+
+The API combines rejected-read counts into `dataHealth.unavailableReads`. `dataHealth.status` is `partial` whenever any bounded repository read is unavailable or normalized rate-limit information cannot be read. It is `complete` only when those optional probes return without rejected repository reads and the rate-limit resource is available.
 
 The server reads GitHub's `/rate_limit` endpoint when possible and returns normalized `core` and `search` resource values: limit, used, remaining, and reset time. The browser displays only the normalized remaining core budget.
 
