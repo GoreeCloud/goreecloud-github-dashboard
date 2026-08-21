@@ -78,9 +78,20 @@ if (!failures.length) {
   ];
 
   for (const file of sourceFiles) {
-    const content = fs.readFileSync(file, "utf8");
+    const relativePath = path.relative(root, file);
+    let content = fs.readFileSync(file, "utf8");
+
+    // The validator necessarily contains the detector signatures themselves. Mask only
+    // that declaration before scanning this file so real secrets elsewhere in it still fail.
+    if (relativePath === "scripts/validate.mjs") {
+      content = content.replace(
+        /const secretPatterns = \[[\s\S]*?\n  \];/,
+        "const secretPatterns = [];",
+      );
+    }
+
     for (const pattern of secretPatterns) {
-      if (pattern.test(content)) failures.push(`Potential committed secret in ${path.relative(root, file)}`);
+      if (pattern.test(content)) failures.push(`Potential committed secret in ${relativePath}`);
     }
   }
 }
