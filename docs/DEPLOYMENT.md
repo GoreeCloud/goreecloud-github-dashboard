@@ -43,6 +43,17 @@ GitHub Actions read access is optional but recommended for the CI Health surface
 
 Do not grant the dashboard credential repository administration, contents write, issues write, pull-request write, workflow write, secrets, organization administration, or deletion permissions.
 
+## Request timeout behavior
+
+Every outbound GitHub request is protected by an AbortController-backed timeout. The current default is 8 seconds per request. The internal timeout value is clamped to a bounded range so future specialized calls or tests cannot accidentally create an unbounded request.
+
+During deployment validation, verify both timeout paths:
+
+- A core request timeout must produce a sanitized dashboard refresh error and must not leak the credential or raw authorization header.
+- A repository-specific optional request timeout must preserve successful peer data and switch the dashboard to partial coverage rather than failing the complete page.
+
+No production environment setting is required for the current timeout because the default is source-controlled and validated. A future configuration option should be added only if a demonstrated operational need justifies it.
+
 ## Access-gate sequence
 
 1. Create the Pages project from this repository or another approved GoreeCloud deployment path.
@@ -57,6 +68,7 @@ Do not grant the dashboard credential repository administration, contents write,
 10. Verify the dashboard loads expected private and public repository metadata without exposing the token in browser source, network payloads, logs, or generated assets.
 11. Confirm whether workflow visibility is complete or partial with the chosen least-privilege token.
 12. Confirm normalized GitHub API budget visibility is present, or that its absence is reported as partial coverage.
+13. Confirm an intentionally stalled or unreachable upstream request is bounded by the request timeout rather than hanging the dashboard indefinitely.
 
 ## Validation before production approval
 
@@ -71,11 +83,12 @@ At minimum, validate:
 - Security headers are present.
 - Phone 390 x 844, Tablet 820 x 1180, Desktop 1280 x 900, and Wide Desktop 1600 x 1000 representative task flows are reviewed for the supported targets.
 - Keyboard focus, reduced motion, increased contrast, and forced-colors behavior remain usable.
-- Repository Attention distinguishes critical, review, and informational signals without implying that every informational signal is a defect.
+- Repository Attention distinguishes critical, review, informational, and coverage-unavailable signals without implying unavailable evidence is a confirmed defect or confirmed absence.
 - CI Health correctly shows success/failure/in-progress/no-run states where Actions read access exists.
 - Missing Actions read permission degrades to explicit partial coverage rather than a complete dashboard outage.
 - GitHub rate-limit metadata is shown when available and absent data is not silently represented as complete.
-- Empty, GitHub-error, optional-data, and rate-limit states are understandable and do not leak backend internals.
+- Core and repository-specific request timeouts behave according to the documented failure hierarchy.
+- Empty, GitHub-error, optional-data, timeout, and rate-limit states are understandable and do not leak backend internals.
 - Rollback to the prior Pages deployment is available.
 
 TV is not an initial supported target and is not part of the initial acceptance claim.

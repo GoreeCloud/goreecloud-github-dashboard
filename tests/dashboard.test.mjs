@@ -6,6 +6,7 @@ import {
   fetchRateLimit,
   fetchRecentChanges,
   firstMeaningfulChangelogSection,
+  githubRequest,
   normalizeRateLimit,
   normalizeRepository,
   normalizeWorkflowRun,
@@ -226,6 +227,26 @@ test("rate-limit visibility fails soft without breaking the dashboard", async ()
   try {
     const result = await fetchRateLimit({ GITHUB_TOKEN: "test-token" });
     assert.equal(result, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("GitHub requests abort after the bounded request timeout", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, options = {}) => new Promise((_resolve, reject) => {
+    options.signal?.addEventListener("abort", () => {
+      const error = new Error("aborted");
+      error.name = "AbortError";
+      reject(error);
+    }, { once: true });
+  });
+
+  try {
+    await assert.rejects(
+      githubRequest({ GITHUB_TOKEN: "test-token" }, "/rate_limit", { timeoutMs: 250 }),
+      /GitHub request timed out after 250ms/,
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }

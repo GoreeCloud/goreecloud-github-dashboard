@@ -61,6 +61,10 @@ if (!failures.length) {
   if (!github.includes("Promise.allSettled")) failures.push("Bounded fail-soft GitHub fan-out is missing.");
   if (!github.includes("fetchWorkflowHealth")) failures.push("Workflow health aggregation is missing.");
   if (!github.includes("fetchRateLimit")) failures.push("Rate-limit aggregation is missing.");
+  if (!github.includes("unavailableRepositories")) failures.push("Coverage-aware unavailable-repository tracking is missing.");
+  if (!github.includes("DEFAULT_REQUEST_TIMEOUT_MS")) failures.push("GitHub request timeout constant is missing.");
+  if (!github.includes("new AbortController()")) failures.push("AbortController request timeout protection is missing.");
+  if (!github.includes("clearTimeout(timer)")) failures.push("GitHub request timeout cleanup is missing.");
   if (!middleware.includes("Content-Security-Policy")) failures.push("CSP security header is missing.");
   if (!middleware.includes("frame-ancestors 'none'")) failures.push("Frame-ancestor protection is missing.");
   if (!gitignore.includes(".dev.vars")) failures.push("Local Cloudflare secrets must be ignored.");

@@ -2,6 +2,9 @@ const API_ROOT = "https://api.github.com";
 const API_VERSION = "2022-11-28";
 const CHANGELOG_PATHS = ["CHANGELOG.md", "docs/CHANGELOG.md", "changelog.md"];
 const FAILURE_CONCLUSIONS = new Set(["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"]);
+const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
+const MIN_REQUEST_TIMEOUT_MS = 250;
+const MAX_REQUEST_TIMEOUT_MS = 20_000;
 
 function ageDays(value, now = Date.now()) {
   const timestamp = Date.parse(value || 0);
@@ -21,6 +24,12 @@ function settledCollection(results, candidates, flatten = false) {
       ? fulfilled.flatMap((result) => result.value || [])
       : fulfilled.map((result) => result.value).filter(Boolean),
   };
+}
+
+function boundedTimeout(value = DEFAULT_REQUEST_TIMEOUT_MS) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_REQUEST_TIMEOUT_MS;
+  return Math.min(MAX_REQUEST_TIMEOUT_MS, Math.max(MIN_REQUEST_TIMEOUT_MS, Math.round(numeric)));
 }
 
 export function activityScore(repository, now = Date.now()) {
@@ -213,27 +222,68 @@ function headers(env) {
 }
 
 export async function githubRequest(env, path, options = {}) {
-  const { optional = false, ...requestOptions } = options;
-  const response = await fetch(`${API_ROOT}${path}`, {
-    ...requestOptions,
-    headers: {
-      ...headers(env),
-      ...(requestOptions.headers || {}),
-    },
-  });
+  const {
+    optional = false,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    ...requestOptions
+  } = options;
+  const {
+    signal: upstreamSignal,
+    headers: requestHeaders,
+    ...fetchOptions
+  } = requestOptions;
+  const controller = new AbortController();
+  const effectiveTimeoutMs = boundedTimeout(timeoutMs);
+  let timedOut = false;
+  let forwardAbort = null;
 
-  if (response.status === 404 && optional) return null;
-
-  if (!response.ok) {
-    const remaining = response.headers.get("x-ratelimit-remaining");
-    const reset = response.headers.get("x-ratelimit-reset");
-    const rateMessage = remaining === "0" && reset
-      ? ` GitHub rate limit resets at ${new Date(Number(reset) * 1000).toISOString()}.`
-      : "";
-    throw new Error(`GitHub API ${response.status} for ${path}.${rateMessage}`);
+  if (upstreamSignal) {
+    if (upstreamSignal.aborted) {
+      controller.abort();
+    } else {
+      forwardAbort = () => controller.abort();
+      upstreamSignal.addEventListener("abort", forwardAbort, { once: true });
+    }
   }
 
-  return response.json();
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, effectiveTimeoutMs);
+
+  try {
+    const response = await fetch(`${API_ROOT}${path}`, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: {
+        ...headers(env),
+        ...(requestHeaders || {}),
+      },
+    });
+
+    if (response.status === 404 && optional) return null;
+
+    if (!response.ok) {
+      const remaining = response.headers.get("x-ratelimit-remaining");
+      const reset = response.headers.get("x-ratelimit-reset");
+      const rateMessage = remaining === "0" && reset
+        ? ` GitHub rate limit resets at ${new Date(Number(reset) * 1000).toISOString()}.`
+        : "";
+      throw new Error(`GitHub API ${response.status} for ${path}.${rateMessage}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(`GitHub request timed out after ${effectiveTimeoutMs}ms for ${path}.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    if (upstreamSignal && forwardAbort) {
+      upstreamSignal.removeEventListener("abort", forwardAbort);
+    }
+  }
 }
 
 export async function fetchAllRepositories(env, owner) {

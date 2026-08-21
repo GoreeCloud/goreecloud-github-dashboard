@@ -34,6 +34,20 @@ A refresh performs the following bounded read operations:
 
 The implementation intentionally limits pagination and repository fan-out so a single dashboard refresh does not perform repository-wide deep crawling.
 
+## GitHub request timeout boundary
+
+Every call made through `githubRequest` receives an AbortController-backed timeout. The current production default is 8 seconds per GitHub request. The internal override used by tests and potential future specialized calls is clamped between 250 milliseconds and 20 seconds so an accidental value cannot create an unbounded request or an effectively disabled timeout.
+
+The timeout wraps the complete fetch operation and is always cleared in `finally`. If a caller supplies an upstream AbortSignal, that signal is forwarded to the internal controller and its listener is removed during cleanup.
+
+Timeout handling preserves the existing failure hierarchy:
+
+- A timeout during a core account-wide read, such as repository enumeration or the primary open-work searches, causes a sanitized dashboard refresh failure.
+- A timeout during bounded repository fan-out, such as one repository's recent commits, changelog, release, or workflow status, is captured by `Promise.allSettled` and becomes explicit partial coverage while successful peer results remain usable.
+- The browser does not receive the GitHub credential, raw authorization header, or a private stack trace when a timeout occurs.
+
+This prevents one stalled upstream GitHub request from holding the dashboard indefinitely while preserving truthful partial-data semantics.
+
 ## Top repository ranking
 
 The dashboard ranks operational relevance rather than popularity alone. The current score favors:
@@ -63,7 +77,7 @@ Critical signals sort ahead of review and informational signals. The model is in
 
 The dashboard probes only the latest workflow run for each Top 10 repository. This is a bounded health indicator rather than an Actions replacement.
 
-Actions visibility is best-effort. If the read-only credential cannot read workflow runs for one or more repositories, those failures are isolated with `Promise.allSettled`. The primary dashboard continues to render, `dataHealth.status` becomes `partial`, and the affected repository can carry an explicit CI-coverage-unavailable attention reason.
+Actions visibility is best-effort. If the read-only credential cannot read workflow runs for one or more repositories, or a workflow request times out, those failures are isolated with `Promise.allSettled`. The primary dashboard continues to render, `dataHealth.status` becomes `partial`, and the affected repository can carry an explicit CI-coverage-unavailable attention reason.
 
 A repository with no workflow run after a successful Actions read is represented as an ordinary `none` state. It is not treated as an API failure.
 
@@ -75,7 +89,7 @@ The dashboard checks these paths, in order:
 - `docs/CHANGELOG.md`
 - `changelog.md`
 
-It extracts a short summary from the first meaningful changelog section and links to the authoritative file in GitHub. A successful probe that finds no repository-local changelog may appear as an informational attention signal. A rejected changelog probe is instead recorded as unavailable coverage so the dashboard does not claim absence without evidence.
+It extracts a short summary from the first meaningful changelog section and links to the authoritative file in GitHub. A successful probe that finds no repository-local changelog may appear as an informational attention signal. A rejected or timed-out changelog probe is instead recorded as unavailable coverage so the dashboard does not claim absence without evidence.
 
 The separate `goreecloud-changelogs` application remains independently governed. The dashboard does not invent changelog entries that are not present in the probed GitHub repository files and does not make the changelog application an undocumented runtime dependency.
 
@@ -90,7 +104,7 @@ Each bounded collection retains:
 - `unavailableRepositories`: repository names associated with rejected reads, retained server-side for correct derived attention behavior.
 - `items`: normalized successful results.
 
-The public dashboard API does not need to expose the internal unavailable-repository name arrays separately because the repository inventory is already private dashboard data and the browser only needs aggregate coverage state. The server uses those names to avoid confusing an unavailable probe with confirmed absence.
+The public dashboard API does not expose the internal unavailable-repository name arrays separately because the browser only needs aggregate coverage state. The server uses those names to avoid confusing an unavailable probe with confirmed absence.
 
 The API combines rejected-read counts into `dataHealth.unavailableReads`. `dataHealth.status` is `partial` whenever any bounded repository read is unavailable or normalized rate-limit information cannot be read. It is `complete` only when those optional probes return without rejected repository reads and the rate-limit resource is available.
 
@@ -114,7 +128,7 @@ The application never performs GitHub mutations.
 
 ## Failure behavior
 
-Core account-wide failures, such as inability to enumerate the repository portfolio or query the primary open-work searches, return a sanitized dashboard error and preserve the read-only boundary. Repository-specific recent-commit, changelog, release, and workflow failures degrade to explicit partial coverage. Rate-limit visibility also fails soft.
+Core account-wide failures, such as inability to enumerate the repository portfolio or query the primary open-work searches, return a sanitized dashboard error and preserve the read-only boundary. Repository-specific recent-commit, changelog, release, and workflow failures—including timeouts—degrade to explicit partial coverage. Rate-limit visibility also fails soft.
 
 No token, upstream authorization header, private stack trace, or raw credential-bearing response is returned to the browser.
 

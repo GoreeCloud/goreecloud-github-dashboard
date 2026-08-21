@@ -13,10 +13,11 @@ The application is deliberately text-first while its unique canonical product ic
 - Recent commit activity across GoreeCloud repositories.
 - Top 10 repositories ranked by operational activity rather than popularity alone.
 - Total, public, and private repository counts.
-- Repository-attention signals for failed CI, stale active repositories, large open-work counts, and missing repository-local changelogs among the ranked repositories.
+- Repository-attention signals for failed CI, stale active repositories, large open-work counts, confirmed missing repository-local changelogs, and unavailable CI/changelog coverage among the ranked repositories.
 - Best-effort latest GitHub Actions status for the Top 10 repositories.
-- Explicit complete/partial data-coverage state when optional workflow visibility is unavailable.
+- Explicit complete/partial data-coverage state when optional repository reads are unavailable.
 - GitHub core API remaining-budget visibility when the rate-limit endpoint is available.
+- Bounded per-request GitHub timeout protection so a stalled upstream request cannot hold the complete dashboard refresh indefinitely.
 - Open pull request and issue summaries.
 - Latest release visibility where repositories publish GitHub releases.
 - Repository-local changelog discovery using common `CHANGELOG.md` paths.
@@ -39,6 +40,8 @@ The API refuses to return repository data unless all of the following are true:
 
 GitHub Actions visibility is deliberately best-effort. If the read-only credential does not include the permission needed to read workflow runs, the rest of the dashboard remains available and the interface reports partial coverage rather than failing the complete aggregation request.
 
+Each GitHub request is also protected by a bounded timeout. The current default is 8 seconds, with internal test/override values clamped to a safe range. Timeout errors follow the same sanitized core-failure or partial-coverage paths as other upstream failures and never expose the GitHub credential.
+
 ## Local development
 
 The static interface can be opened directly from `public/` for visual work. Live GitHub data requires a Pages-compatible local runtime and server-side environment values.
@@ -60,7 +63,7 @@ npm test
 npm run check
 ```
 
-The validation workflow checks repository structure, JavaScript syntax, security invariants, dashboard health surfaces, and unit tests for ranking, normalization, changelog extraction, workflow normalization, rate-limit normalization, and repository-attention behavior.
+The validation workflow checks repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, and unit tests for ranking, normalization, changelog extraction, workflow normalization, rate-limit normalization, repository-attention behavior, partial-data behavior, and request timeout behavior.
 
 ## Deployment
 
@@ -68,7 +71,7 @@ See `docs/DEPLOYMENT.md`. Do not publish the dashboard with private repository a
 
 ## Architecture
 
-See `docs/ARCHITECTURE.md` for the read-only aggregation model, partial-data behavior, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
+See `docs/ARCHITECTURE.md` for the read-only aggregation model, partial-data behavior, request timeout strategy, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
 
 ## License
 
