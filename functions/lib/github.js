@@ -98,15 +98,16 @@ function headers(env) {
 }
 
 export async function githubRequest(env, path, options = {}) {
+  const { optional = false, ...requestOptions } = options;
   const response = await fetch(`${API_ROOT}${path}`, {
-    ...options,
+    ...requestOptions,
     headers: {
       ...headers(env),
-      ...(options.headers || {}),
+      ...(requestOptions.headers || {}),
     },
   });
 
-  if (response.status === 404 && options.optional) return null;
+  if (response.status === 404 && optional) return null;
 
   if (!response.ok) {
     const remaining = response.headers.get("x-ratelimit-remaining");
