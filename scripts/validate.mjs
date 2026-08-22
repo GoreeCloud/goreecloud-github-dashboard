@@ -13,6 +13,7 @@ const requiredFiles = [
   "public/styles.css",
   "public/app.js",
   "public/bootstrap.js",
+  "public/data-health.js",
   "public/refresh-guard.js",
   "public/refresh-policy.js",
   "functions/_middleware.js",
@@ -24,6 +25,7 @@ const requiredFiles = [
   "tests/refresh-policy.test.mjs",
   "tests/api-contract.test.mjs",
   "tests/github-fixtures.test.mjs",
+  "tests/data-health.test.mjs",
 ];
 
 const failures = [];
@@ -39,12 +41,15 @@ for (const file of requiredFiles) {
 if (!failures.length) {
   const html = read("public/index.html");
   const css = read("public/styles.css");
+  const app = read("public/app.js");
   const bootstrap = read("public/bootstrap.js");
+  const dataHealth = read("public/data-health.js");
   const refreshGuard = read("public/refresh-guard.js");
   const refreshPolicy = read("public/refresh-policy.js");
   const api = read("functions/api/dashboard.js");
   const github = read("functions/lib/github.js");
   const githubFixtures = read("tests/github-fixtures.test.mjs");
+  const dataHealthTests = read("tests/data-health.test.mjs");
   const middleware = read("functions/_middleware.js");
   const gitignore = read(".gitignore");
   const envExample = read(".env.example");
@@ -56,12 +61,19 @@ if (!failures.length) {
   if (!html.includes('id="repository-search"')) failures.push("Repository search control is required.");
   if (!html.includes('id="attention-list"')) failures.push("Repository Attention surface is required.");
   if (!html.includes('id="workflow-list"')) failures.push("CI Health surface is required.");
+  if (!html.includes('id="coverage-list"')) failures.push("Per-source coverage detail surface is required.");
+  if (!html.includes('id="coverage-count"')) failures.push("Coverage detail count surface is required.");
   if (!html.includes('id="data-state"')) failures.push("Data-coverage state is required.");
   if (!html.includes('id="rate-state"')) failures.push("Rate-limit state is required.");
   if (!html.includes('id="refresh-state"')) failures.push("Refresh-cooldown state is required.");
   if (!html.includes('src="/bootstrap.js"')) failures.push("Dashboard bootstrap module is required.");
   if (!bootstrap.includes('import "./refresh-guard.js"')) failures.push("Refresh guard must load before the application module.");
   if (!bootstrap.includes('import "./app.js"')) failures.push("Application module is missing from bootstrap.");
+  if (!app.includes('import { buildCoverageRows } from "./data-health.js"')) failures.push("Coverage detail model is not connected to the dashboard renderer.");
+  if (!app.includes("renderCoverage(dataHealth)")) failures.push("Coverage detail renderer is missing from dashboard refresh.");
+  if (!dataHealth.includes("export function buildCoverageRows")) failures.push("Coverage detail model export is missing.");
+  if (!dataHealth.includes('key: "api-budget"')) failures.push("API-budget coverage detail row is missing.");
+  if (!dataHealthTests.includes("coverage detail marks only the affected repository probe partial")) failures.push("Coverage detail partial-state test is missing.");
   if (!refreshGuard.includes("stopImmediatePropagation")) failures.push("Refresh guard must block cooldown-bypassing clicks.");
   if (!refreshGuard.includes("MutationObserver")) failures.push("Refresh guard must react to completed refresh state changes.");
   if (!refreshPolicy.includes("SUCCESS_COOLDOWN_SECONDS = 30")) failures.push("Successful refresh cooldown must remain explicit and reviewable.");
