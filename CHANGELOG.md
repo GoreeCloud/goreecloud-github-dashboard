@@ -14,6 +14,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Unit coverage for success cooldown, failure retry floor, deterministic cooldown deadlines, remaining-time rounding, and cooldown bounds.
 - API contract tests for missing-credential fail-closed behavior, locked private-access interlock behavior, mutation-style HTTP method rejection, and protected JSON/no-store error responses.
 - Deterministic representative GitHub API fixture coverage for complete private-repository aggregation, owner filtering, optional absence, permission denial, rate-limit loss, and sanitized core failures.
+- Dedicated GitHub edge-fixture coverage for multi-page repository enumeration, owner filtering across pages, search rate-limit failure, recent-commit and release 404-versus-403 semantics, no-run workflow coverage, incomplete rate-limit resources, and upstream abort propagation.
 - Full-width Coverage Detail surface that breaks recent-commit, changelog, release, workflow, and API-budget health into independently reviewable states.
 - Dependency-free data-health presentation model with unit coverage for complete, partial, unavailable, malformed, and impossible count inputs.
 
@@ -21,9 +22,12 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 
 - The browser entry point now loads `public/bootstrap.js`, which evaluates the refresh guard before `public/app.js`.
 - Manual refresh clicks are blocked during an active cooldown in the capture phase before they can reach the application refresh listener.
-- Repository validation now requires the bootstrap, refresh guard, refresh policy, refresh-state surface, refresh-policy tests, API contract tests, representative GitHub fixture tests, Coverage Detail surface, data-health model, and data-health tests.
+- Repository validation now requires the bootstrap, refresh guard, refresh policy, refresh-state surface, refresh-policy tests, API contract tests, representative GitHub fixture tests, GitHub edge-fixture tests, Coverage Detail surface, data-health model, and data-health tests.
 - JavaScript syntax validation now checks the bootstrap, data-health, and refresh modules.
 - The browser now distinguishes per-source successful and unavailable optional reads instead of requiring the aggregate partial-coverage pill to carry all diagnostic meaning.
+- Repository enumeration is now fixture-validated across the existing 100-item page boundary so a full first page must continue to the next page while foreign-owner results remain excluded.
+- Optional recent-commit and release reads are now fixture-validated to preserve the semantic distinction between confirmed 404 absence and unavailable 403 evidence.
+- A successful GitHub Actions response with no workflow runs is now fixture-validated as available coverage with an explicit `none` state rather than partial coverage.
 - Architecture and deployment documentation now distinguish the browser cooldown from enforceable server-side rate limiting.
 - Architecture documentation now records the deterministic GitHub fixture boundary and explicitly separates fixture evidence from live private-repository, rendered, deployment, and production acceptance.
 - Dashboard version remains `0.3.0-dev` and the project remains in the GoreeCloud Development lifecycle.
@@ -36,6 +40,8 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Representative fixtures verify that a synthetic GitHub credential and raw upstream-only repository/workflow fields do not pass through the normalized dashboard payload.
 - Permission-denied fixture scenarios verify that unavailable workflow/changelog evidence is represented as partial coverage instead of false success or false confirmed absence.
 - Core upstream permission failures are fixture-validated to return the sanitized `github_aggregation_failed` browser response without exposing the synthetic credential or raw upstream response body.
+- Search API rate-limit failures are fixture-validated to remain sanitized at the dashboard boundary without returning the synthetic credential or raw upstream response body.
+- Upstream request cancellation is fixture-validated as distinct from the dashboard's own bounded timeout path so external aborts are not falsely reported as internal request timeouts.
 - Coverage Detail is derived only from aggregate counts and the rate-limit-availability flag already returned by the private dashboard API; it does not expose the server-side unavailable-repository identity list or credential material.
 - No GitHub mutation route, production deployment, private-access change, or credential expansion is introduced by this development entry.
 
