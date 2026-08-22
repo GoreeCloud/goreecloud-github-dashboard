@@ -22,6 +22,7 @@ const requiredFiles = [
   "docs/DEPLOYMENT.md",
   "tests/dashboard.test.mjs",
   "tests/refresh-policy.test.mjs",
+  "tests/api-contract.test.mjs",
 ];
 
 const failures = [];
