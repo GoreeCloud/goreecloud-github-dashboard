@@ -23,6 +23,7 @@ const requiredFiles = [
   "tests/dashboard.test.mjs",
   "tests/refresh-policy.test.mjs",
   "tests/api-contract.test.mjs",
+  "tests/github-fixtures.test.mjs",
 ];
 
 const failures = [];
@@ -43,6 +44,7 @@ if (!failures.length) {
   const refreshPolicy = read("public/refresh-policy.js");
   const api = read("functions/api/dashboard.js");
   const github = read("functions/lib/github.js");
+  const githubFixtures = read("tests/github-fixtures.test.mjs");
   const middleware = read("functions/_middleware.js");
   const gitignore = read(".gitignore");
   const envExample = read(".env.example");
@@ -81,6 +83,11 @@ if (!failures.length) {
   if (!github.includes("DEFAULT_REQUEST_TIMEOUT_MS")) failures.push("GitHub request timeout constant is missing.");
   if (!github.includes("new AbortController()")) failures.push("AbortController request timeout protection is missing.");
   if (!github.includes("clearTimeout(timer)")) failures.push("GitHub request timeout cleanup is missing.");
+  if (!githubFixtures.includes("representative GitHub fixtures produce a complete normalized dashboard response")) failures.push("Representative complete GitHub fixture coverage is missing.");
+  if (!githubFixtures.includes("Actions permission denial becomes partial coverage")) failures.push("GitHub Actions permission-denial fixture coverage is missing.");
+  if (!githubFixtures.includes("changelog permission denial is not misreported")) failures.push("Changelog permission-denial fixture coverage is missing.");
+  if (!githubFixtures.includes("rate-limit endpoint failure keeps primary data usable")) failures.push("Rate-limit failure fixture coverage is missing.");
+  if (!githubFixtures.includes("core GitHub permission failure returns a sanitized aggregation error")) failures.push("Sanitized core GitHub failure fixture coverage is missing.");
   if (!middleware.includes("Content-Security-Policy")) failures.push("CSP security header is missing.");
   if (!middleware.includes("frame-ancestors 'none'")) failures.push("Frame-ancestor protection is missing.");
   if (!gitignore.includes(".dev.vars")) failures.push("Local Cloudflare secrets must be ignored.");

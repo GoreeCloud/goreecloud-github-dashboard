@@ -122,6 +122,23 @@ The server reads GitHub's `/rate_limit` endpoint when possible and returns norma
 
 This model prevents recent commits, changelogs, releases, workflow status, or rate-limit visibility from disappearing silently while the page implies complete coverage.
 
+## Deterministic GitHub fixture validation
+
+The test suite includes a representative, synthetic private GitHub portfolio fixture that exercises the same `/api/dashboard` aggregation entry point used by the Pages Function. The fixture does not use a live credential and does not make external GitHub requests.
+
+The deterministic scenarios verify:
+
+- A complete normalized private-repository response, including repository owner filtering, recent commits, open work, changelog discovery, latest release data, workflow health, and rate-limit metadata.
+- Raw repository-only and workflow-only fields do not pass through the normalized browser response.
+- The synthetic credential is used only in upstream request headers and is absent from the returned dashboard payload.
+- A GitHub Actions `403` becomes explicit workflow partial coverage rather than failing the complete dashboard.
+- Optional `404` results for changelogs and releases remain confirmed absence/non-error conditions rather than being counted as permission failures.
+- A changelog `403` is represented as unavailable evidence and is not misreported as a confirmed missing changelog.
+- Loss of the `/rate_limit` endpoint leaves primary dashboard data usable while marking coverage partial.
+- A core repository-enumeration permission failure produces the sanitized `github_aggregation_failed` response without returning the credential or raw upstream response body.
+
+These fixtures are source-level acceptance evidence only. They do not satisfy the separate requirements for live representative public/private repository validation, live permission and rate-limit behavior, rendered browser/device acceptance, authenticated deployment validation, or production approval.
+
 ## Privacy boundary
 
 The dashboard repository is private and the intended live dashboard is private. Private repository names, descriptions, commit messages, issue titles, pull request titles, workflow names/branches, changelog text, release metadata, and derived attention signals are all treated as private operational information unless separately approved for public display.

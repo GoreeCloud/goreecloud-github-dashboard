@@ -66,7 +66,9 @@ npm test
 npm run check
 ```
 
-The validation workflow checks repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, and unit tests for ranking, normalization, changelog extraction, workflow normalization, rate-limit normalization, repository-attention behavior, partial-data behavior, request timeout behavior, and cooldown calculations.
+The validation workflow checks repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, and unit tests for ranking, normalization, changelog extraction, workflow normalization, rate-limit normalization, repository-attention behavior, partial-data behavior, request timeout behavior, and cooldown calculations.
+
+Deterministic representative GitHub fixtures exercise the complete dashboard aggregation path without live credentials. They verify private-repository normalization and owner filtering, complete coverage, Actions permission denial, the distinction between confirmed optional `404` absence and unavailable permission-denied evidence, fail-soft rate-limit loss, and sanitized core GitHub failures. Fixture validation strengthens source confidence but does not replace live private-repository validation, rendered form-factor acceptance, or deployment acceptance.
 
 ## Deployment
 
@@ -74,7 +76,7 @@ See `docs/DEPLOYMENT.md`. Do not publish the dashboard with private repository a
 
 ## Architecture
 
-See `docs/ARCHITECTURE.md` for the read-only aggregation model, partial-data behavior, request timeout strategy, manual-refresh discipline, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
+See `docs/ARCHITECTURE.md` for the read-only aggregation model, partial-data behavior, request timeout strategy, manual-refresh discipline, deterministic GitHub fixture validation, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
 
 ## License
 
