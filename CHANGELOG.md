@@ -15,22 +15,27 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - API contract tests for missing-credential fail-closed behavior, locked private-access interlock behavior, mutation-style HTTP method rejection, and protected JSON/no-store error responses.
 - Deterministic representative GitHub API fixture coverage for complete private-repository aggregation, owner filtering, optional absence, permission denial, rate-limit loss, and sanitized core failures.
 - Dedicated GitHub edge-fixture coverage for multi-page repository enumeration, owner filtering across pages, search rate-limit failure, recent-commit and release 404-versus-403 semantics, no-run workflow coverage, incomplete rate-limit resources, and upstream abort propagation.
+- Dedicated bounded-collection fixtures for the five-page repository-enumeration cap and mixed multi-repository recent-change, changelog-fallback, and workflow coverage states.
 - Full-width Coverage Detail surface that breaks recent-commit, changelog, release, workflow, and API-budget health into independently reviewable states.
 - Dependency-free data-health presentation model with unit coverage for complete, partial, unavailable, malformed, and impossible count inputs.
+- GitHub request identity-header contract test that ties the outbound dashboard `User-Agent` to the version declared in `package.json` and verifies the GitHub REST media type and API-version headers.
 
 ### Changed
 
 - The browser entry point now loads `public/bootstrap.js`, which evaluates the refresh guard before `public/app.js`.
 - Manual refresh clicks are blocked during an active cooldown in the capture phase before they can reach the application refresh listener.
-- Repository validation now requires the bootstrap, refresh guard, refresh policy, refresh-state surface, refresh-policy tests, API contract tests, representative GitHub fixture tests, GitHub edge-fixture tests, Coverage Detail surface, data-health model, and data-health tests.
+- Repository validation now requires the bootstrap, refresh guard, refresh policy, refresh-state surface, refresh-policy tests, API contract tests, representative GitHub fixture tests, GitHub edge-fixture tests, bounded collection fixtures, GitHub request identity-header contract test, Coverage Detail surface, data-health model, and data-health tests.
 - JavaScript syntax validation now checks the bootstrap, data-health, and refresh modules.
 - The browser now distinguishes per-source successful and unavailable optional reads instead of requiring the aggregate partial-coverage pill to carry all diagnostic meaning.
 - Repository enumeration is now fixture-validated across the existing 100-item page boundary so a full first page must continue to the next page while foreign-owner results remain excluded.
+- Repository enumeration is additionally fixture-validated against its existing five-page safety bound so five full pages stop without requesting a sixth page.
 - Optional recent-commit and release reads are now fixture-validated to preserve the semantic distinction between confirmed 404 absence and unavailable 403 evidence.
+- Mixed multi-repository fixtures verify that successful results, confirmed optional absence, and isolated unavailable evidence can coexist without corrupting collection coverage semantics.
 - A successful GitHub Actions response with no workflow runs is now fixture-validated as available coverage with an explicit `none` state rather than partial coverage.
-- Exact-head validation at `44a07bc93d5142d563efbffd6e1a091d6940d886` completed successfully in workflow run #20 / `32541415538` with all thirty-eight tests passing and repository validation green.
-- Architecture and deployment documentation now distinguish the browser cooldown from enforceable server-side rate limiting.
-- Architecture documentation now records the deterministic GitHub fixture boundary and explicitly separates fixture evidence from live private-repository, rendered, deployment, and production acceptance.
+- The outbound GitHub REST `User-Agent` now derives from an explicit `CLIENT_VERSION` of `0.3.0-dev`, eliminating the previous internal `0.2` identity drift while keeping the package at `0.3.0-dev`.
+- Exact-head source validation at `9fa175d630a060767bf757d8a49cbf721524f608` completed successfully in workflow run #30 / `32542915735` with all forty-three tests passing and repository validation green.
+- Architecture and deployment documentation distinguish the browser cooldown from enforceable server-side rate limiting.
+- Architecture documentation records the deterministic GitHub fixture boundary and explicitly separates fixture evidence from live private-repository, rendered, deployment, and production acceptance.
 - Dashboard version remains `0.3.0-dev` and the project remains in the GoreeCloud Development lifecycle.
 
 ### Security
@@ -44,6 +49,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Search API rate-limit failures are fixture-validated to remain sanitized at the dashboard boundary without returning the synthetic credential or raw upstream response body.
 - Upstream request cancellation is fixture-validated as distinct from the dashboard's own bounded timeout path so external aborts are not falsely reported as internal request timeouts.
 - Coverage Detail is derived only from aggregate counts and the rate-limit-availability flag already returned by the private dashboard API; it does not expose the server-side unavailable-repository identity list or credential material.
+- GitHub request identity testing uses only a synthetic test credential and does not introduce or expose a reusable GitHub credential.
 - Exact-head CI retained only Contents read and Metadata read permissions for its GitHub token.
 - No GitHub mutation route, production deployment, private-access change, or credential expansion is introduced by this development entry.
 
