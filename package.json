@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node scripts/validate.mjs && node --check public/app.js && node --check public/bootstrap.js && node --check public/refresh-guard.js && node --check public/refresh-policy.js && node --check functions/_middleware.js && node --check functions/api/dashboard.js && node --check functions/lib/github.js"
+    "check": "node scripts/validate.mjs && node --check public/app.js && node --check public/bootstrap.js && node --check public/data-health.js && node --check public/refresh-guard.js && node --check public/refresh-policy.js && node --check functions/_middleware.js && node --check functions/api/dashboard.js && node --check functions/lib/github.js"
   },
   "engines": {
     "node": ">=20"
