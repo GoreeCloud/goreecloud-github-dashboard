@@ -21,9 +21,11 @@ const requiredFiles = [
   "functions/lib/github.js",
   "docs/ARCHITECTURE.md",
   "docs/DEPLOYMENT.md",
+  "docs/CACHE_POLICY.md",
   "tests/dashboard.test.mjs",
   "tests/refresh-policy.test.mjs",
   "tests/api-contract.test.mjs",
+  "tests/cache-policy.test.mjs",
   "tests/github-fixtures.test.mjs",
   "tests/github-edge-fixtures.test.mjs",
   "tests/github-boundary-fixtures.test.mjs",
@@ -51,6 +53,8 @@ if (!failures.length) {
   const refreshPolicy = read("public/refresh-policy.js");
   const api = read("functions/api/dashboard.js");
   const github = read("functions/lib/github.js");
+  const cachePolicy = read("docs/CACHE_POLICY.md");
+  const cachePolicyTests = read("tests/cache-policy.test.mjs");
   const githubFixtures = read("tests/github-fixtures.test.mjs");
   const githubEdgeFixtures = read("tests/github-edge-fixtures.test.mjs");
   const githubBoundaryFixtures = read("tests/github-boundary-fixtures.test.mjs");
@@ -94,6 +98,11 @@ if (!failures.length) {
   if (!api.includes("workflowHealth")) failures.push("CI Health API output is missing.");
   if (!api.includes("dataHealth")) failures.push("Partial-data API metadata is missing.");
   if (!api.includes("rateLimit")) failures.push("Rate-limit API output is missing.");
+  if (!api.includes('"Cache-Control": "private, no-store, max-age=0"')) failures.push("Private dashboard API cache policy must remain no-store until authenticated cache isolation is approved.");
+  if (!cachePolicy.includes("defer shared caching")) failures.push("Cache policy must record the Development-stage shared-cache deferral decision.");
+  if (!cachePolicy.includes("authenticated private-access layer")) failures.push("Cache policy must retain the authenticated-access prerequisite.");
+  if (!cachePolicyTests.includes("dashboard API remains private no-store while authenticated cache isolation is unverified")) failures.push("Private no-store cache contract test is missing.");
+  if (!cachePolicyTests.includes("private dashboard function does not use shared edge-cache primitives")) failures.push("Shared edge-cache exclusion contract test is missing.");
   if (!github.includes("Promise.allSettled")) failures.push("Bounded fail-soft GitHub fan-out is missing.");
   if (!github.includes("fetchWorkflowHealth")) failures.push("Workflow health aggregation is missing.");
   if (!github.includes("fetchRateLimit")) failures.push("Rate-limit aggregation is missing.");
