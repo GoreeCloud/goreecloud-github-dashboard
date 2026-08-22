@@ -1,5 +1,6 @@
 const API_ROOT = "https://api.github.com";
 const API_VERSION = "2022-11-28";
+const CLIENT_VERSION = "0.3.0-dev";
 const CHANGELOG_PATHS = ["CHANGELOG.md", "docs/CHANGELOG.md", "changelog.md"];
 const FAILURE_CONCLUSIONS = new Set(["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"]);
 const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
@@ -216,7 +217,7 @@ function headers(env) {
   return {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-    "User-Agent": "GoreeCloud-GitHub-Dashboard/0.2",
+    "User-Agent": `GoreeCloud-GitHub-Dashboard/${CLIENT_VERSION}`,
     "X-GitHub-Api-Version": API_VERSION,
   };
 }
