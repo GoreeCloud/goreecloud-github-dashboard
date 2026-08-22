@@ -28,6 +28,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Repository enumeration is now fixture-validated across the existing 100-item page boundary so a full first page must continue to the next page while foreign-owner results remain excluded.
 - Optional recent-commit and release reads are now fixture-validated to preserve the semantic distinction between confirmed 404 absence and unavailable 403 evidence.
 - A successful GitHub Actions response with no workflow runs is now fixture-validated as available coverage with an explicit `none` state rather than partial coverage.
+- Exact-head validation at `44a07bc93d5142d563efbffd6e1a091d6940d886` completed successfully in workflow run #20 / `32541415538` with all thirty-eight tests passing and repository validation green.
 - Architecture and deployment documentation now distinguish the browser cooldown from enforceable server-side rate limiting.
 - Architecture documentation now records the deterministic GitHub fixture boundary and explicitly separates fixture evidence from live private-repository, rendered, deployment, and production acceptance.
 - Dashboard version remains `0.3.0-dev` and the project remains in the GoreeCloud Development lifecycle.
@@ -43,6 +44,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Search API rate-limit failures are fixture-validated to remain sanitized at the dashboard boundary without returning the synthetic credential or raw upstream response body.
 - Upstream request cancellation is fixture-validated as distinct from the dashboard's own bounded timeout path so external aborts are not falsely reported as internal request timeouts.
 - Coverage Detail is derived only from aggregate counts and the rate-limit-availability flag already returned by the private dashboard API; it does not expose the server-side unavailable-repository identity list or credential material.
+- Exact-head CI retained only Contents read and Metadata read permissions for its GitHub token.
 - No GitHub mutation route, production deployment, private-access change, or credential expansion is introduced by this development entry.
 
 ## 0.2.0-dev — 2026-08-21
