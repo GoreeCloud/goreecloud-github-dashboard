@@ -1,3 +1,5 @@
+import { buildCoverageRows } from "./data-health.js";
+
 const state = {
   data: null,
   loading: false,
@@ -220,6 +222,53 @@ function renderWorkflowHealth(items = [], dataHealth = {}) {
   }
 }
 
+function renderCoverage(dataHealth = {}) {
+  const container = byId("coverage-list");
+  clear(container);
+  const rows = buildCoverageRows(dataHealth);
+  setText("coverage-count", rows.length);
+
+  for (const row of rows) {
+    const card = document.createElement("article");
+    card.className = "list-card";
+
+    const header = document.createElement("div");
+    header.className = "list-card-header";
+    const title = document.createElement("h3");
+    title.className = "item-title";
+    title.textContent = row.label;
+
+    const label = row.status === "complete" ? "Complete" : row.status === "partial" ? "Partial" : "Unavailable";
+    const variant = row.status === "complete" ? "success" : "private";
+    header.append(title, createBadge(label, variant));
+
+    const description = document.createElement("p");
+    description.className = "item-description";
+    if (row.kind === "repository") {
+      description.textContent = row.checked === 0
+        ? "No ranked repositories required this probe."
+        : `${row.available} of ${row.checked} repository reads succeeded.`;
+    } else {
+      description.textContent = row.available
+        ? "GitHub core/search API budget metadata was returned."
+        : "API budget visibility is unavailable; primary dashboard data may still be usable.";
+    }
+
+    const meta = document.createElement("p");
+    meta.className = "item-meta";
+    if (row.kind === "repository") {
+      meta.textContent = row.unavailable > 0
+        ? `${row.unavailable} unavailable read${row.unavailable === 1 ? "" : "s"}`
+        : "No unavailable reads";
+    } else {
+      meta.textContent = row.available ? "Rate-limit telemetry available" : "Rate-limit telemetry unavailable";
+    }
+
+    card.append(header, description, meta);
+    container.append(card);
+  }
+}
+
 function renderCardList(containerId, countId, items, type) {
   const container = byId(containerId);
   clear(container);
@@ -363,6 +412,7 @@ function renderDashboard(data) {
   renderTopRepositories(data.topRepositories || []);
   renderAttention(data.repositoryAttention || []);
   renderWorkflowHealth(data.workflowHealth || [], dataHealth);
+  renderCoverage(dataHealth);
   renderCardList("changelog-list", "changelog-count", data.changelogs || [], "changelog");
   renderCardList("release-list", "release-count", data.releases || [], "release");
   renderCardList("pr-list", "pr-count", data.pullRequests || [], "pull request");
