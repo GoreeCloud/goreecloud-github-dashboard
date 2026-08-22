@@ -19,6 +19,8 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Full-width Coverage Detail surface that breaks recent-commit, changelog, release, workflow, and API-budget health into independently reviewable states.
 - Dependency-free data-health presentation model with unit coverage for complete, partial, unavailable, malformed, and impossible count inputs.
 - GitHub request identity-header contract test that ties the outbound dashboard `User-Agent` to the version declared in `package.json` and verifies the GitHub REST media type and API-version headers.
+- `docs/CACHE_POLICY.md` documenting the current private-data cache boundary, prerequisites for any future authenticated cache partition, and the decision to defer shared caching during Development.
+- Cache-policy tests confirming private/no-store/max-age=0 behavior and the absence of shared edge-cache primitives, shared-cache directives, and ETag-based cache contracts in the private dashboard function.
 
 ### Changed
 
@@ -33,7 +35,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Mixed multi-repository fixtures verify that successful results, confirmed optional absence, and isolated unavailable evidence can coexist without corrupting collection coverage semantics.
 - A successful GitHub Actions response with no workflow runs is now fixture-validated as available coverage with an explicit `none` state rather than partial coverage.
 - The outbound GitHub REST `User-Agent` now derives from an explicit `CLIENT_VERSION` of `0.3.0-dev`, eliminating the previous internal `0.2` identity drift while keeping the package at `0.3.0-dev`.
-- Exact-head source validation at `9fa175d630a060767bf757d8a49cbf721524f608` completed successfully in workflow run #30 / `32542915735` with all forty-three tests passing and repository validation green.
+- Shared server-side or edge caching remains intentionally disabled until authenticated deployment provides a verified identity partition that can safely key private repository data.
 - Architecture and deployment documentation distinguish the browser cooldown from enforceable server-side rate limiting.
 - Architecture documentation records the deterministic GitHub fixture boundary and explicitly separates fixture evidence from live private-repository, rendered, deployment, and production acceptance.
 - Dashboard version remains `0.3.0-dev` and the project remains in the GoreeCloud Development lifecycle.
@@ -50,6 +52,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Upstream request cancellation is fixture-validated as distinct from the dashboard's own bounded timeout path so external aborts are not falsely reported as internal request timeouts.
 - Coverage Detail is derived only from aggregate counts and the rate-limit-availability flag already returned by the private dashboard API; it does not expose the server-side unavailable-repository identity list or credential material.
 - GitHub request identity testing uses only a synthetic test credential and does not introduce or expose a reusable GitHub credential.
+- The current cache policy explicitly rejects shared edge caching of authenticated dashboard responses until a verified authorization-aware cache partition exists.
 - Exact-head CI retained only Contents read and Metadata read permissions for its GitHub token.
 - No GitHub mutation route, production deployment, private-access change, or credential expansion is introduced by this development entry.
 
@@ -73,7 +76,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Settled collections retain the names of repositories whose optional reads rejected so derived attention can distinguish unavailable evidence from confirmed absence.
 - Repository Attention says CI or changelog coverage is unavailable when the corresponding probe rejected instead of falsely claiming a missing changelog or implying CI was successfully checked.
 - `dataHealth.unavailableReads` combines rejected recent-commit, changelog, release, and workflow reads; coverage is complete only when those bounded probes succeed and rate-limit information is available.
-- A stalled core GitHub request now terminates through the sanitized core-error path instead of waiting indefinitely.
+- A stalled core GitHub request now terminates through the sanitized dashboard-error path instead of waiting indefinitely.
 - A stalled repository-specific optional GitHub request now rejects into the existing settled collection and becomes partial coverage while successful peer data remains available.
 - Glaze UI documentation records the current Stable 1.3 baseline directly and keeps TV explicitly unsupported.
 - Architecture and deployment documentation define optional Actions-read permission, partial-data behavior, request timeout behavior, rate-limit visibility, and the repository-attention model.
