@@ -27,6 +27,7 @@ const requiredFiles = [
   "tests/github-fixtures.test.mjs",
   "tests/github-edge-fixtures.test.mjs",
   "tests/github-boundary-fixtures.test.mjs",
+  "tests/github-request-headers.test.mjs",
   "tests/data-health.test.mjs",
 ];
 
@@ -53,6 +54,7 @@ if (!failures.length) {
   const githubFixtures = read("tests/github-fixtures.test.mjs");
   const githubEdgeFixtures = read("tests/github-edge-fixtures.test.mjs");
   const githubBoundaryFixtures = read("tests/github-boundary-fixtures.test.mjs");
+  const githubRequestHeaders = read("tests/github-request-headers.test.mjs");
   const dataHealthTests = read("tests/data-health.test.mjs");
   const middleware = read("functions/_middleware.js");
   const gitignore = read(".gitignore");
@@ -99,6 +101,9 @@ if (!failures.length) {
   if (!github.includes("DEFAULT_REQUEST_TIMEOUT_MS")) failures.push("GitHub request timeout constant is missing.");
   if (!github.includes("new AbortController()")) failures.push("AbortController request timeout protection is missing.");
   if (!github.includes("clearTimeout(timer)")) failures.push("GitHub request timeout cleanup is missing.");
+  if (!github.includes('const CLIENT_VERSION = "0.3.0-dev"')) failures.push("GitHub client version must match the current dashboard source version.");
+  if (!github.includes('`GoreeCloud-GitHub-Dashboard/${CLIENT_VERSION}`')) failures.push("GitHub User-Agent must derive from the explicit client version.");
+  if (!githubRequestHeaders.includes("GitHub requests identify the current dashboard package version")) failures.push("GitHub request identity-header contract test is missing.");
   if (!githubFixtures.includes("representative GitHub fixtures produce a complete normalized dashboard response")) failures.push("Representative complete GitHub fixture coverage is missing.");
   if (!githubFixtures.includes("Actions permission denial becomes partial coverage")) failures.push("GitHub Actions permission-denial fixture coverage is missing.");
   if (!githubFixtures.includes("changelog permission denial is not misreported")) failures.push("Changelog permission-denial fixture coverage is missing.");
