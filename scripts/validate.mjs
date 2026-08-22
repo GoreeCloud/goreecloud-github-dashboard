@@ -26,6 +26,7 @@ const requiredFiles = [
   "tests/api-contract.test.mjs",
   "tests/github-fixtures.test.mjs",
   "tests/github-edge-fixtures.test.mjs",
+  "tests/github-boundary-fixtures.test.mjs",
   "tests/data-health.test.mjs",
 ];
 
@@ -51,6 +52,7 @@ if (!failures.length) {
   const github = read("functions/lib/github.js");
   const githubFixtures = read("tests/github-fixtures.test.mjs");
   const githubEdgeFixtures = read("tests/github-edge-fixtures.test.mjs");
+  const githubBoundaryFixtures = read("tests/github-boundary-fixtures.test.mjs");
   const dataHealthTests = read("tests/data-health.test.mjs");
   const middleware = read("functions/_middleware.js");
   const gitignore = read(".gitignore");
@@ -108,6 +110,10 @@ if (!failures.length) {
   if (!githubEdgeFixtures.includes("release optional 404 and permission 403 remain distinct")) failures.push("Release 404/403 edge-fixture coverage is missing.");
   if (!githubEdgeFixtures.includes("workflow no-run response remains available coverage")) failures.push("Workflow no-run edge-fixture coverage is missing.");
   if (!githubEdgeFixtures.includes("upstream abort stays distinct from request timeout")) failures.push("Upstream-abort edge-fixture coverage is missing.");
+  if (!githubBoundaryFixtures.includes("repository enumeration stops at the five-page safety bound")) failures.push("Repository page-cap boundary coverage is missing.");
+  if (!githubBoundaryFixtures.includes("mixed recent-change coverage preserves successes")) failures.push("Mixed recent-change boundary coverage is missing.");
+  if (!githubBoundaryFixtures.includes("mixed changelog coverage preserves fallback discovery")) failures.push("Mixed changelog boundary coverage is missing.");
+  if (!githubBoundaryFixtures.includes("mixed workflow coverage keeps successful and no-run repositories")) failures.push("Mixed workflow boundary coverage is missing.");
   if (!middleware.includes("Content-Security-Policy")) failures.push("CSP security header is missing.");
   if (!middleware.includes("frame-ancestors 'none'")) failures.push("Frame-ancestor protection is missing.");
   if (!gitignore.includes(".dev.vars")) failures.push("Local Cloudflare secrets must be ignored.");
