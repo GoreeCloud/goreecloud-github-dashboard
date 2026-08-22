@@ -48,6 +48,16 @@ Timeout handling preserves the existing failure hierarchy:
 
 This prevents one stalled upstream GitHub request from holding the dashboard indefinitely while preserving truthful partial-data semantics.
 
+## Manual refresh discipline
+
+The browser entry point is now `public/bootstrap.js`, which evaluates the refresh guard before the existing application module. The guard does not perform GitHub reads itself and does not alter the server-side credential boundary.
+
+After the application reports a successful refresh, the guard starts a 30-second manual-refresh cooldown. During that period, the Refresh control is disabled, its visible label counts down, and capture-phase click handling prevents a user click from reaching the application refresh listener. If the application reports that data is unavailable, the guard starts a shorter 10-second retry floor so an upstream failure cannot encourage rapid repeated retries.
+
+Cooldown calculations live in the dependency-free `public/refresh-policy.js` module and are covered by unit tests. The user interface exposes the current refresh state as an additional overview pill.
+
+This mechanism is intentionally a browser-side operational safeguard only. It reduces accidental repeated API fan-out and makes refresh behavior explicit, but it is not server-side rate limiting, authentication, authorization, abuse prevention, or a substitute for GitHub's own rate limits. A user with direct authenticated access to the API endpoint could bypass the browser guard, so any future need for enforceable throttling must be implemented server-side inside the same private access boundary.
+
 ## Top repository ranking
 
 The dashboard ranks operational relevance rather than popularity alone. The current score favors:

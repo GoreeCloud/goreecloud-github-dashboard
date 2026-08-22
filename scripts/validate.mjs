@@ -12,12 +12,16 @@ const requiredFiles = [
   "public/index.html",
   "public/styles.css",
   "public/app.js",
+  "public/bootstrap.js",
+  "public/refresh-guard.js",
+  "public/refresh-policy.js",
   "functions/_middleware.js",
   "functions/api/dashboard.js",
   "functions/lib/github.js",
   "docs/ARCHITECTURE.md",
   "docs/DEPLOYMENT.md",
   "tests/dashboard.test.mjs",
+  "tests/refresh-policy.test.mjs",
 ];
 
 const failures = [];
@@ -33,6 +37,9 @@ for (const file of requiredFiles) {
 if (!failures.length) {
   const html = read("public/index.html");
   const css = read("public/styles.css");
+  const bootstrap = read("public/bootstrap.js");
+  const refreshGuard = read("public/refresh-guard.js");
+  const refreshPolicy = read("public/refresh-policy.js");
   const api = read("functions/api/dashboard.js");
   const github = read("functions/lib/github.js");
   const middleware = read("functions/_middleware.js");
@@ -48,6 +55,14 @@ if (!failures.length) {
   if (!html.includes('id="workflow-list"')) failures.push("CI Health surface is required.");
   if (!html.includes('id="data-state"')) failures.push("Data-coverage state is required.");
   if (!html.includes('id="rate-state"')) failures.push("Rate-limit state is required.");
+  if (!html.includes('id="refresh-state"')) failures.push("Refresh-cooldown state is required.");
+  if (!html.includes('src="/bootstrap.js"')) failures.push("Dashboard bootstrap module is required.");
+  if (!bootstrap.includes('import "./refresh-guard.js"')) failures.push("Refresh guard must load before the application module.");
+  if (!bootstrap.includes('import "./app.js"')) failures.push("Application module is missing from bootstrap.");
+  if (!refreshGuard.includes("stopImmediatePropagation")) failures.push("Refresh guard must block cooldown-bypassing clicks.");
+  if (!refreshGuard.includes("MutationObserver")) failures.push("Refresh guard must react to completed refresh state changes.");
+  if (!refreshPolicy.includes("SUCCESS_COOLDOWN_SECONDS = 30")) failures.push("Successful refresh cooldown must remain explicit and reviewable.");
+  if (!refreshPolicy.includes("FAILURE_RETRY_SECONDS = 10")) failures.push("Failed refresh retry floor must remain explicit and reviewable.");
   if (!css.includes("@media (max-width: 599px)")) failures.push("Mobile Glaze UI range is missing.");
   if (!css.includes("@media (max-width: 1023px)")) failures.push("Tablet Glaze UI range is missing.");
   if (!css.includes("prefers-reduced-motion")) failures.push("Reduced-motion resilience is missing.");
@@ -97,8 +112,6 @@ if (!failures.length) {
     const relativePath = path.relative(root, file);
     let content = fs.readFileSync(file, "utf8");
 
-    // The validator necessarily contains the detector signatures themselves. Mask only
-    // that declaration before scanning this file so real secrets elsewhere in it still fail.
     if (relativePath === "scripts/validate.mjs") {
       content = content.replace(
         /const secretPatterns = \[[\s\S]*?\n  \];/,

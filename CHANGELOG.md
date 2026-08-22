@@ -2,6 +2,32 @@
 
 All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git history remains authoritative for exact commits and pull requests.
 
+## 0.3.0-dev — 2026-08-21
+
+### Added
+
+- Browser-side manual-refresh guard loaded before the existing application module through a dedicated bootstrap entry point.
+- Visible refresh-state pill in the overview surface.
+- Thirty-second cooldown after a successful dashboard refresh to reduce accidental repeated GitHub API fan-out.
+- Ten-second retry floor after a failed refresh so upstream failures do not encourage rapid repeated retries.
+- Dependency-free refresh-policy module with bounded cooldown calculations.
+- Unit coverage for success cooldown, failure retry floor, deterministic cooldown deadlines, remaining-time rounding, and cooldown bounds.
+
+### Changed
+
+- The browser entry point now loads `public/bootstrap.js`, which evaluates the refresh guard before `public/app.js`.
+- Manual refresh clicks are blocked during an active cooldown in the capture phase before they can reach the application refresh listener.
+- Repository validation now requires the bootstrap, refresh guard, refresh policy, refresh-state surface, and refresh-policy tests.
+- JavaScript syntax validation now checks the new bootstrap and refresh modules.
+- Architecture and deployment documentation now distinguish the browser cooldown from enforceable server-side rate limiting.
+- Dashboard version advanced to `0.3.0-dev` while remaining in the GoreeCloud Development lifecycle.
+
+### Security
+
+- The refresh guard does not receive or store the GitHub token and does not change the server-side credential boundary.
+- The cooldown is explicitly not treated as authentication, authorization, or server-side abuse prevention.
+- No GitHub mutation route, production deployment, private-access change, or credential expansion is introduced by this development entry.
+
 ## 0.2.0-dev — 2026-08-21
 
 ### Added

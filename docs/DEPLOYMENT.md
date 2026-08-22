@@ -54,6 +54,12 @@ During deployment validation, verify both timeout paths:
 
 No production environment setting is required for the current timeout because the default is source-controlled and validated. A future configuration option should be added only if a demonstrated operational need justifies it.
 
+## Manual refresh behavior
+
+The browser applies a visible cooldown to the manual Refresh control. A successful refresh starts a 30-second cooldown; a failed refresh starts a 10-second retry floor. The browser entry point loads the refresh guard before the application module so capture-phase click handling can block cooldown-bypassing clicks before they reach the application refresh listener.
+
+This guard is an operational user-interface safeguard, not server-side rate limiting. Direct authenticated API requests are not throttled by this browser control. If enforceable request throttling becomes necessary after live deployment observation, it must be designed and validated as a separate server-side control inside the authenticated private-access boundary.
+
 ## Access-gate sequence
 
 1. Create the Pages project from this repository or another approved GoreeCloud deployment path.
@@ -69,6 +75,7 @@ No production environment setting is required for the current timeout because th
 11. Confirm whether workflow visibility is complete or partial with the chosen least-privilege token.
 12. Confirm normalized GitHub API budget visibility is present, or that its absence is reported as partial coverage.
 13. Confirm an intentionally stalled or unreachable upstream request is bounded by the request timeout rather than hanging the dashboard indefinitely.
+14. Confirm successful manual refreshes enforce the visible 30-second browser cooldown and failed refreshes enforce the 10-second retry floor without interfering with the initial automatic load.
 
 ## Validation before production approval
 
@@ -88,7 +95,8 @@ At minimum, validate:
 - Missing Actions read permission degrades to explicit partial coverage rather than a complete dashboard outage.
 - GitHub rate-limit metadata is shown when available and absent data is not silently represented as complete.
 - Core and repository-specific request timeouts behave according to the documented failure hierarchy.
-- Empty, GitHub-error, optional-data, timeout, and rate-limit states are understandable and do not leak backend internals.
+- The manual refresh cooldown is visible, keyboard-safe, touch-safe, and does not claim to be server-side rate limiting.
+- Empty, GitHub-error, optional-data, timeout, cooldown, and rate-limit states are understandable and do not leak backend internals.
 - Rollback to the prior Pages deployment is available.
 
 TV is not an initial supported target and is not part of the initial acceptance claim.
