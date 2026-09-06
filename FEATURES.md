@@ -34,6 +34,8 @@ This record distinguishes verified source functionality from work that is partia
 - Governance observations distinguish present, absent, and unavailable evidence; failed GraphQL batches and GraphQL errors are never converted into false missing-file claims.
 - Governance terminology is deliberately presence-only: observed baseline files do not establish compliance, Platform Contract applicability, lifecycle eligibility, or Stable qualification.
 - Four-state appearance policy: System, Light, Dark, and explicit Deep Dark, with an accessible deterministic cycle and persisted user selection.
+- Shared native appearance controller for both dashboard and governance views, including idempotent control installation and fail-soft browser-storage handling.
+- Superseded renderer-local binary Light/Dark logic and its capture-phase migration guard have been removed.
 - System appearance follows operating-system Light/Dark preference; Deep Dark remains an explicit opt-in rather than being inferred automatically.
 - Light/dark/deep-dark appearance support, visible focus, Reduced Motion, Increased Contrast, Forced Colors, Reduced Transparency fallback, and solid-surface/color-mix resilience.
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
@@ -43,7 +45,7 @@ This record distinguishes verified source functionality from work that is partia
 
 ## Partial or acceptance-gated
 
-- **GLAZE UI V1.1:** source migration now includes System, Light, Dark, and Deep Dark appearance states; rendered, accessibility, resilience, optical-quality, and form-factor acceptance remain pending.
+- **GLAZE UI V1.1:** source migration now includes System, Light, Dark, and Deep Dark appearance states plus the shared native controller; rendered, accessibility, resilience, optical-quality, and form-factor acceptance remain pending.
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
 - **Public-source safety:** repository-local detection and source contracts are implemented, but hosted secret scanning, dependency/security automation, branch/ruleset enforcement, signed release provenance, and production deployment security validation remain separate acceptance work.
