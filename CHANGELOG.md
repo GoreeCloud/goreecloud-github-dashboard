@@ -64,7 +64,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Deterministic representative GitHub API fixture coverage for complete private-repository aggregation, owner filtering, optional absence, permission denial, rate-limit loss, and sanitized core failures.
 - Dedicated GitHub edge-fixture coverage for multi-page repository enumeration, owner filtering across pages, search rate-limit failure, recent-commit and release 404-versus-403 semantics, no-run workflow coverage, incomplete rate-limit resources, and upstream abort propagation.
 - Dedicated bounded-collection fixtures for the five-page repository-enumeration cap and mixed multi-repository recent-change, changelog-fallback, and workflow coverage states.
-- Full-width Coverage Detail surface that breaks recent-commit, changelog, release, workflow, and API-budget health into independently reviewable states.
+- Full-width Coverage Detail surface that breaks recent-commit, changelog, releases, workflows, and API-budget visibility into independently reviewable states.
 - Dependency-free data-health presentation model with unit coverage for complete, partial, unavailable, malformed, and impossible count inputs.
 - GitHub request identity-header contract test that ties the outbound dashboard `User-Agent` to the version declared in `package.json` and verifies the GitHub REST media type and API-version headers.
 - `docs/CACHE_POLICY.md` documenting the current private-data cache boundary, prerequisites for any future authenticated cache partition, and the decision to defer shared caching during Development.
@@ -77,13 +77,17 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Repository validation now requires the bootstrap, refresh guard, refresh policy, refresh-state surface, refresh-policy tests, API contract tests, representative GitHub fixture tests, GitHub edge-fixture tests, bounded collection fixtures, GitHub request identity-header contract test, Coverage Detail surface, data-health model, and data-health tests.
 - JavaScript syntax validation now checks the bootstrap, data-health, and refresh modules.
 - The browser now distinguishes per-source successful and unavailable optional reads instead of requiring the aggregate partial-coverage pill to carry all diagnostic meaning.
-- Repository enumeration is now fixture-validated across the existing 100-item page boundary so a full first page must continue to the next page while foreign-owner results remain excluded.
-- Repository enumeration is additionally fixture-validated against its existing five-page safety bound so five full pages stop without requesting a sixth page.
-- Optional recent-commit and release reads are now fixture-validated to preserve the semantic distinction between confirmed 404 absence and unavailable 403 evidence.
-- Mixed multi-repository fixtures verify that successful results, confirmed optional absence, and isolated unavailable evidence can coexist without corrupting collection coverage semantics.
-- A successful GitHub Actions response with no workflow runs is now fixture-validated as available coverage with an explicit `none` state rather than partial coverage.
-- The outbound GitHub REST `User-Agent` now derives from an explicit `CLIENT_VERSION` of `0.3.0-dev`, eliminating the previous internal `0.2` identity drift while keeping the package at `0.3.0-dev`.
-- Shared server-side or edge caching remains intentionally disabled until authenticated deployment provides a verified identity partition that can safely key private repository data.
+- Repository enumeration is now fixture-validated across the existing 100-item page boundary so a full first page must continue to the next page while foreign-owner repositories remain excluded.
+- Repository enumeration is additionally fixture-validated against the existing five-page safety cap so five full pages stop without requesting page 6.
+- Mixed multi-repository recent-change coverage preserves successful data, confirmed 404 absence, and isolated 403 unavailability in one collection.
+- Mixed changelog coverage validates fallback from `CHANGELOG.md` to `docs/CHANGELOG.md`, confirmed absence, and isolated permission denial without conflating those states.
+- Mixed workflow coverage preserves successful and no-run repositories while isolating one permission failure.
+- Recent-commit and release probes preserve the distinction between optional 404 absence and permission-denied 403 unavailability.
+- Search API rate-limit failure remains sanitized at the dashboard boundary.
+- Upstream abort propagation remains distinct from the dashboard's own bounded request-timeout path.
+- Every GitHub request has an AbortController-backed 8-second default timeout with bounded internal overrides and cleanup.
+- The outbound GitHub REST `User-Agent` now derives from explicit `CLIENT_VERSION = "0.3.0-dev"`, eliminating the previous internal `0.2` identity drift while keeping the package at `0.3.0-dev`.
+- Shared server-side or edge caching was evaluated and intentionally deferred until authenticated deployment provides a verified authorization-aware identity partition. The API remains `private, no-store, max-age=0`, and source contracts reject shared edge-cache primitives, shared-cache directives, and ETag-based cache behavior in the current Development source.
 - Architecture and deployment documentation distinguish the browser cooldown from enforceable server-side rate limiting.
 - Architecture documentation records the deterministic GitHub fixture boundary and explicitly separates fixture evidence from live private-repository, rendered, deployment, and production acceptance.
 - Dashboard version remains `0.3.0-dev` and the project remains in the GoreeCloud Development lifecycle.
@@ -92,14 +96,13 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 
 - The refresh guard does not receive or store the GitHub token and does not change the server-side credential boundary.
 - The cooldown is explicitly not treated as authentication, authorization, or server-side abuse prevention.
-- Automated API contract coverage verifies that missing credentials and an unconfirmed private-access gate fail closed and that error responses retain private/no-store protections.
-- Representative fixtures verify that a synthetic GitHub credential and raw upstream-only repository/workflow fields do not pass through the normalized dashboard payload.
-- Permission-denied fixture scenarios verify that unavailable workflow/changelog evidence is represented as partial coverage instead of false success or false confirmed absence.
-- Core upstream permission failures are fixture-validated to return the sanitized `github_aggregation_failed` browser response without exposing the synthetic credential or raw upstream response body.
-- Search API rate-limit failures are fixture-validated to remain sanitized at the dashboard boundary without returning the synthetic credential or raw upstream response body.
-- Upstream request cancellation is fixture-validated as distinct from the dashboard's own bounded timeout path so external aborts are not falsely reported as internal request timeouts.
-- Coverage Detail is derived only from aggregate counts and the rate-limit-availability flag already returned by the private dashboard API; it does not expose the server-side unavailable-repository identity list or credential material.
-- GitHub request identity testing uses only a synthetic test credential and does not introduce or expose a reusable GitHub credential.
+- Automated API contract coverage verifies missing-token and unconfirmed-access-gate fail-closed states.
+- Repository-specific optional-read failures degrade to explicit partial coverage instead of silently dropping data or encouraging unnecessarily broad credentials.
+- Coverage Detail uses only aggregate counts and the rate-limit-availability flag already returned by the private API; no additional private repository identity list is exposed.
+- Request timeouts do not expose credentials, raw authorization headers, or private upstream response bodies to the browser.
+- API error responses are validated for JSON, private/no-store caching, and nosniff protection.
+- Representative fixtures verify that synthetic credentials and raw upstream-only repository/workflow fields do not pass through the normalized dashboard response.
+- GitHub request-header and cache-policy validation use only synthetic/local test material and introduce no reusable secret.
 - The current cache policy explicitly rejects shared edge caching of authenticated dashboard responses until a verified authorization-aware cache partition exists.
 - Exact-head CI retained only Contents read and Metadata read permissions for its GitHub token.
 - No GitHub mutation route, production deployment, private-access change, or credential expansion is introduced by this development entry.
@@ -112,10 +115,10 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Critical attention for latest failed/cancelled/timed-out/action-required/startup-failure/stale workflow conclusions.
 - Review attention for ranked repositories with more than 90 days since the latest push or at least 15 GitHub-reported open issues/pull requests.
 - Informational attention when no repository-local changelog is detected in successfully probed paths.
-- Best-effort latest GitHub Actions status for each Top 10 repositories.
+- Best-effort latest GitHub Actions workflow status for each Top 10 repository.
 - Explicit complete/partial data-coverage metadata so unavailable optional reads are not hidden.
 - Normalized GitHub core/search rate-limit metadata with browser-visible remaining core API budget.
-- AbortController-backed 8-second default timeout protection for every GitHub request, with bounded internal override values and cleanup of timers/forwarded abort listeners.
+- AbortController-backed 8-second default timeout protection for every GitHub request, with bounded internal overrides and cleanup of timers/forwarded abort listeners.
 - Unit tests for workflow normalization, rate-limit normalization, CI-priority attention ordering, stale-repository attention, coverage-aware attention, per-repository recent-change partial failures, fail-soft rate-limit behavior, and request timeout behavior.
 
 ### Changed
