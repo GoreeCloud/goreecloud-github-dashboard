@@ -46,10 +46,30 @@ function governanceNode({ missing = [] } = {}) {
     "competitiveObjectives",
     "branding",
   ];
-  return {
+  const node = {
     name: "governance-fixture",
     ...Object.fromEntries(keys.map((key) => [key, missing.includes(key) ? null : { oid: key }])),
   };
+
+  if (node.platformContract) {
+    const text = [
+      'schema_version: "0.2"',
+      "",
+      "component:",
+      "  type: application",
+      "  id: github-dashboard",
+      "  product_name: Governance Fixture",
+      `  repository: ${OWNER}/governance-fixture`,
+      "",
+    ].join("\n");
+    node.platformContract = {
+      ...node.platformContract,
+      byteSize: Buffer.byteLength(text),
+      text,
+    };
+  }
+
+  return node;
 }
 
 test("governance API fails closed when GitHub credentials are missing", async () => {
@@ -72,7 +92,7 @@ test("governance API fails closed when the external access gate is unconfirmed",
   assert.doesNotMatch(JSON.stringify(payload), new RegExp(TOKEN));
 });
 
-test("governance API returns normalized baseline, documentation, classic protection, rulesets, and workflow references without credential leakage", async () => {
+test("governance API returns normalized baseline, documentation applicability, classic protection, rulesets, and workflow references without credential leakage", async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];
   const rulesetApiVersions = [];
@@ -184,6 +204,13 @@ test("governance API returns normalized baseline, documentation, classic protect
     assert.equal(payload.summary.documentationCheckedRepositories, 1);
     assert.equal(payload.summary.repositoriesWithAllObservedDocumentation, 0);
     assert.equal(payload.summary.repositoriesWithObservedDocumentationGaps, 1);
+    assert.equal(payload.summary.documentationApplicabilityModel, "platform-contract-component-type-declaration");
+    assert.equal(payload.summary.documentationClassifiedRepositories, 1);
+    assert.equal(payload.summary.documentationUnclassifiedRepositories, 0);
+    assert.equal(payload.summary.documentationApplicationRepositories, 1);
+    assert.equal(payload.summary.documentationServiceRepositories, 0);
+    assert.equal(payload.summary.applicableRepositoriesWithAllObservedDocumentation, 0);
+    assert.equal(payload.summary.applicableRepositoriesWithObservedDocumentationGaps, 1);
     assert.equal(payload.summary.classicProtectionCheckedRepositories, 1);
     assert.equal(payload.summary.classicProtectedRepositories, 1);
     assert.equal(payload.summary.rulesetCheckedRepositories, 1);
@@ -193,9 +220,15 @@ test("governance API returns normalized baseline, documentation, classic protect
     assert.equal(payload.summary.observedRequiredWorkflowReferences, 1);
     assert.equal(payload.governance.repositories[0].status, "gaps");
     assert.deepEqual(payload.governance.repositories[0].missingChecks, ["contributing"]);
-    assert.equal(payload.governance.documentation.applicability, "repository-role-unclassified");
+    assert.equal(payload.governance.documentation.applicability, "platform-contract-component-type");
     assert.equal(payload.governance.repositories[0].documentation.status, "gaps");
     assert.deepEqual(payload.governance.repositories[0].documentation.missingChecks, ["specifications"]);
+    assert.deepEqual(payload.governance.repositories[0].documentation.applicability, {
+      status: "applicable",
+      componentType: "application",
+      source: "goreecloud.platform.yaml",
+      reason: "explicit-platform-contract-component-type",
+    });
     assert.equal(payload.governance.repositories[0].classicBranchProtection.defaultBranchProtected, true);
     assert.equal(payload.rulesets.workflowObservationModel, "active-ruleset-required-workflow-references");
     assert.equal(payload.rulesets.repositories[0].hasRequiredWorkflowRule, true);
@@ -210,13 +243,15 @@ test("governance API returns normalized baseline, documentation, classic protect
     assert.deepEqual(rulesetApiVersions, ["2026-03-10"]);
     assert.ok(authorizations.every((value) => value === `Bearer ${TOKEN}`));
     assert.doesNotMatch(serialized, new RegExp(TOKEN));
+    assert.doesNotMatch(serialized, /schema_version/);
+    assert.doesNotMatch(serialized, /Governance Fixture/);
     assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("ruleset observation can fail soft while file, documentation, and classic evidence remain usable", async () => {
+test("ruleset observation can fail soft while file, documentation, applicability, and classic evidence remain usable", async () => {
   const originalFetch = globalThis.fetch;
 
   globalThis.fetch = async (input, options = {}) => {
@@ -250,11 +285,14 @@ test("ruleset observation can fail soft while file, documentation, and classic e
     assert.equal(payload.observationStatus, "partial");
     assert.equal(payload.governance.status, "complete");
     assert.equal(payload.governance.documentation.status, "complete");
+    assert.equal(payload.summary.documentationClassifiedRepositories, 1);
+    assert.equal(payload.summary.documentationUnclassifiedRepositories, 0);
     assert.equal(payload.rulesets.status, "unavailable");
     assert.equal(payload.summary.rulesetUnavailableRepositories, 1);
     assert.equal(payload.summary.repositoriesWithRequiredWorkflowRules, 0);
     assert.equal(payload.governance.repositories[0].checksAvailable, true);
     assert.equal(payload.governance.repositories[0].documentation.available, true);
+    assert.equal(payload.governance.repositories[0].documentation.applicability.componentType, "application");
     assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
   } finally {
     globalThis.fetch = originalFetch;

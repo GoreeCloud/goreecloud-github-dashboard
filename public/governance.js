@@ -87,6 +87,23 @@ function coverageLabel(status) {
   return "Partial";
 }
 
+function componentTypeLabel(value) {
+  if (value === "application") return "Application";
+  if (value === "service") return "Service";
+  return "Unclassified";
+}
+
+function applicabilityReasonLabel(reason) {
+  const labels = {
+    "file-observation-unavailable": "file observation unavailable",
+    "platform-contract-absent": "Platform Contract absent",
+    "platform-contract-too-large": "Platform Contract exceeds interpretation bound",
+    "platform-contract-text-unavailable": "Platform Contract text unavailable",
+    "component-type-unrecognized": "component.type not safely recognized",
+  };
+  return labels[reason] || "no safe application/service declaration";
+}
+
 function renderProbeCards(containerId, countId, probes = [], labels = {}, emptyMessage = "No probes were returned.") {
   const container = byId(containerId);
   clear(container);
@@ -147,11 +164,22 @@ function renderDocumentation(documentation = {}) {
   );
 
   const boundary = byId("documentation-boundary");
-  if (boundary) {
-    boundary.textContent = documentation.applicability === "repository-role-unclassified"
-      ? "Repository role/type applicability is not evaluated by this view. Presence or absence is evidence only."
-      : "Documentation applicability remains a separate governed decision.";
+  if (!boundary) return;
+
+  const classified = documentation.classifiedRepositories || 0;
+  const unclassified = documentation.unclassifiedRepositories || 0;
+  const applications = documentation.applicationRepositories || 0;
+  const services = documentation.serviceRepositories || 0;
+
+  if (classified === 0) {
+    boundary.textContent = "Repository role/type applicability is not evaluated by this view when no safe Platform Contract application/service declaration is available. Presence or absence is evidence only.";
+    return;
   }
+
+  const classifiedText = `${classified} repositories explicitly classified for documentation applicability from Platform Contract component.type · ${applications} application · ${services} service`;
+  boundary.textContent = unclassified > 0
+    ? `${classifiedText} · ${unclassified} remain unclassified. Presence or absence is evidence only; the declaration is not full manifest validation or policy satisfaction.`
+    : `${classifiedText}. Presence or absence is evidence only; the declaration is not full manifest validation or policy satisfaction.`;
 }
 
 function protectionControlLabels(rules = []) {
@@ -313,8 +341,13 @@ function rulesetTerms(ruleset = {}) {
 
 function documentationTerms(documentation = {}) {
   if (!documentation.available) return ["documentation unavailable"];
+  const applicability = documentation.applicability || {};
   return [
     documentation.status,
+    applicability.status,
+    applicability.componentType,
+    applicability.reason,
+    applicability.status === "applicable" ? "documentation applicable" : "role unclassified",
     ...(documentation.presentChecks || []).map((key) => DOCUMENTATION_LABELS[key] || key),
     ...(documentation.missingChecks || []).map((key) => `missing ${DOCUMENTATION_LABELS[key] || key}`),
   ];
@@ -411,6 +444,18 @@ function renderRepositoryRows(repositories = [], rulesetByRepository = new Map()
         documentation.missingChecks?.length ? `${present} / ${total} observed` : "All observed",
         documentation.missingChecks?.length ? "" : "success",
       ));
+
+      const applicability = documentation.applicability || {};
+      const applicabilityDetail = document.createElement("div");
+      applicabilityDetail.className = "repo-description";
+      if (applicability.status === "applicable") {
+        const type = componentTypeLabel(applicability.componentType);
+        applicabilityDetail.textContent = `Applicability declared · ${type} via Platform Contract component.type`;
+      } else {
+        applicabilityDetail.textContent = `Role unclassified · ${applicabilityReasonLabel(applicability.reason)}`;
+      }
+      documentationCell.append(applicabilityDetail);
+
       const detail = document.createElement("div");
       detail.className = "repo-description";
       detail.textContent = documentation.missingChecks?.length
@@ -510,6 +555,8 @@ function renderGovernance(data) {
   setText("stat-gaps", summary.repositoriesWithObservedGaps ?? 0);
   setText("stat-documentation-complete", summary.repositoriesWithAllObservedDocumentation ?? 0);
   setText("stat-documentation-gaps", summary.repositoriesWithObservedDocumentationGaps ?? 0);
+  setText("stat-documentation-applicable", summary.documentationClassifiedRepositories ?? 0);
+  setText("stat-documentation-unclassified", summary.documentationUnclassifiedRepositories ?? 0);
   setText("stat-classic-protected", summary.classicProtectedRepositories ?? 0);
   setText("stat-rulesets-active", summary.repositoriesWithActiveRulesets ?? 0);
   setText("stat-required-workflows", summary.repositoriesWithRequiredWorkflowRules ?? 0);
@@ -526,7 +573,7 @@ function renderGovernance(data) {
   setPill("coverage-state", coverageText, overallStatus === "complete");
   setText(
     "sidebar-status",
-    `${summary.checkedRepositories ?? 0} baseline · ${summary.documentationCheckedRepositories ?? 0} docs · ${summary.classicProtectionCheckedRepositories ?? 0} classic · ${summary.rulesetCheckedRepositories ?? 0} ruleset observations`,
+    `${summary.checkedRepositories ?? 0} baseline · ${summary.documentationCheckedRepositories ?? 0} docs · ${summary.documentationClassifiedRepositories ?? 0} applicable · ${summary.classicProtectionCheckedRepositories ?? 0} classic · ${summary.rulesetCheckedRepositories ?? 0} ruleset observations`,
   );
 
   renderProbes(governance.probes || []);

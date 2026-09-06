@@ -18,6 +18,9 @@ test("governance page keeps the same no-inline-script and no-inline-style bounda
   assert.match(html, /id="documentation-boundary"/);
   assert.match(html, /id="stat-documentation-complete"/);
   assert.match(html, /id="stat-documentation-gaps"/);
+  assert.match(html, /id="stat-documentation-applicable"/);
+  assert.match(html, /id="stat-documentation-unclassified"/);
+  assert.match(html, /Platform Contract component\.type/);
   assert.match(html, /id="classic-protection"/);
   assert.match(html, /id="classic-protection-list"/);
   assert.match(html, /id="stat-classic-protected"/);
@@ -44,14 +47,20 @@ test("governance bootstrap applies Glaze, shared appearance, refresh discipline,
   assert.ok(governanceIndex > refreshIndex);
 });
 
-test("governance renderer uses only the read-only governance endpoint and labels evidence conservatively", () => {
+test("governance renderer exposes application/service applicability without weakening conservative evidence labels", () => {
   assert.match(renderer, /fetch\("\/api\/governance"/);
   assert.match(renderer, /No repository state was changed/);
   assert.match(renderer, /Unknown — observation unavailable/);
   assert.match(renderer, /None observed/);
   assert.match(renderer, /documentation evidence/i);
   assert.match(renderer, /Repository role\/type applicability is not evaluated by this view/);
+  assert.match(renderer, /Platform Contract component\.type/);
+  assert.match(renderer, /documentationClassifiedRepositories/);
+  assert.match(renderer, /documentationUnclassifiedRepositories/);
+  assert.match(renderer, /Applicability declared/);
+  assert.match(renderer, /Role unclassified/);
   assert.match(renderer, /Presence or absence is evidence only/);
+  assert.match(renderer, /not full manifest validation or policy satisfaction/);
   assert.match(renderer, /No matching rule/);
   assert.match(renderer, /Active rules/);
   assert.match(renderer, /No active rules/);

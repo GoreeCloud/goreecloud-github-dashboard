@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0f6f6a" />
     <meta
       name="description"
-      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, policy-defined documentation evidence, classic default-branch protection, active rulesets, and required-workflow references."
+      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, policy-defined documentation evidence and applicability declarations, classic default-branch protection, active rulesets, and required-workflow references."
     />
     <title>GoreeCloud GitHub Governance</title>
     <link rel="stylesheet" href="/styles.css" />
@@ -55,9 +55,9 @@
         <section id="summary" class="hero panel panel-glaze" aria-labelledby="governance-title">
           <div class="hero-copy">
             <span class="hero-kicker">Read-only observation</span>
-            <h2 id="governance-title">See baseline files, documentation evidence, branch protections, active rulesets, and required-workflow references across the portfolio.</h2>
+            <h2 id="governance-title">See baseline files, documentation evidence, applicability declarations, branch protections, active rulesets, and required-workflow references across the portfolio.</h2>
             <p>
-              These signals are repository-state evidence, not proof of policy compliance. The six documentation paths are policy-defined for GoreeCloud applications and services, but repository role/type applicability is not yet classified here. Required-workflow references are likewise evidence only until separate policy interpretation is available.
+              These signals are repository-state evidence, not proof of policy satisfaction. Documentation applicability is classified only when the exact default-branch Platform Contract explicitly declares <code>component.type</code> as application or service; every other repository remains unclassified. Required-workflow references likewise remain evidence until separate governed interpretation exists.
             </p>
           </div>
           <div class="hero-meta">
@@ -93,7 +93,17 @@
           <article class="stat-card panel">
             <span class="stat-label">Docs gaps</span>
             <strong class="stat-value" id="stat-documentation-gaps">—</strong>
-            <span class="stat-caption">Observed absence; applicability not classified</span>
+            <span class="stat-caption">Observed absence; policy result not inferred</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs applicable</span>
+            <strong class="stat-value" id="stat-documentation-applicable">—</strong>
+            <span class="stat-caption">Application/service declared by Platform Contract</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs unclassified</span>
+            <strong class="stat-value" id="stat-documentation-unclassified">—</strong>
+            <span class="stat-caption">No safe application/service declaration</span>
           </article>
           <article class="stat-card panel">
             <span class="stat-label">Classic protected</span>
@@ -141,7 +151,7 @@
             <span class="section-count" id="documentation-count">0</span>
           </div>
           <p id="documentation-boundary" class="item-meta">
-            Repository role/type applicability is not evaluated by this view. Presence or absence is evidence only.
+            Applicability is classified only from an explicit Platform Contract component.type declaration of application or service. Presence or absence remains evidence only.
           </p>
           <div id="documentation-list" class="content-grid" aria-live="polite">
             <div class="empty-state">Refresh to inspect repository documentation evidence.</div>
@@ -195,7 +205,7 @@
             </div>
             <label class="search-field">
               <span class="sr-only">Search governance observations</span>
-              <input id="governance-search" type="search" placeholder="Search repositories, files, protection, rulesets, or workflows" autocomplete="off" />
+              <input id="governance-search" type="search" placeholder="Search repositories, docs, roles, protection, rulesets, or workflows" autocomplete="off" />
             </label>
           </div>
           <div class="table-wrap">
