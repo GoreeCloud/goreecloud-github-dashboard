@@ -31,8 +31,11 @@ This record distinguishes verified source functionality from work that is partia
 - Fail-closed `/api/ready` configuration-readiness endpoint requiring both server-side GitHub credential configuration and confirmed external private-access configuration without exposing which prerequisite is missing.
 - Dedicated `/governance.html` Portfolio Control Plane view and GET-only `/api/governance` endpoint.
 - Batched GitHub GraphQL observation of exact default-branch presence for `goreecloud.platform.yaml`, root `SECURITY.md`, root `CONTRIBUTING.md`, and `.github/CODEOWNERS`, with a default batch size of 20 and hard maximum of 25 repositories.
-- Governance observations distinguish present, absent, and unavailable evidence; failed GraphQL batches and GraphQL errors are never converted into false missing-file claims.
-- Governance terminology is deliberately presence-only: observed baseline files do not establish compliance, Platform Contract applicability, lifecycle eligibility, or Stable qualification.
+- Separate batched GraphQL observation of classic GitHub branch-protection rules that match each repository's exact default branch using GitHub's `matchingRefs` evidence rather than dashboard-side pattern interpretation.
+- Normalized classic-protection evidence includes review requirements, code-owner reviews, status-check contexts, strict status checks, signed commits, conversation resolution, last-push approval, linear history, force-push/deletion allowances, and administrator enforcement where matching rules are safely observable.
+- Governance channels preserve independent complete/partial/unavailable state so classic-protection permission or pagination uncertainty cannot erase otherwise valid baseline-file evidence.
+- Incomplete branch-protection pagination is fail-soft: if an exact default-branch match cannot be established from the bounded result, the state remains unavailable instead of becoming a false no-rule claim.
+- Governance terminology remains observational: present/absent files and matching/no-matching classic rules do not establish compliance, Platform Contract applicability, lifecycle eligibility, or Stable qualification.
 - Four-state appearance policy: System, Light, Dark, and explicit Deep Dark, with an accessible deterministic cycle and persisted user selection.
 - Shared native appearance controller for both dashboard and governance views, including idempotent control installation and fail-soft browser-storage handling.
 - Superseded renderer-local binary Light/Dark logic and its capture-phase migration guard have been removed.
@@ -49,8 +52,9 @@ This record distinguishes verified source functionality from work that is partia
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
 - **Public-source safety:** repository-local detection and source contracts are implemented, but hosted secret scanning, dependency/security automation, branch/ruleset enforcement, signed release provenance, and production deployment security validation remain separate acceptance work.
-- **Governance control plane:** baseline file presence observation is implemented, but repository role/type, applicability, manifest validation for peer repositories, branch/ruleset enforcement, required workflow state, security/dependency automation, release eligibility, broader documentation completeness, and platform-system integration state are not yet implemented.
-- **Governance GraphQL runtime:** deterministic source/fixture coverage exists; representative live private-repository GraphQL permission and rate-budget validation remains pending.
+- **Governance control plane:** baseline files and classic default-branch protection are observed, but repository role/type, applicability, peer manifest validation, GitHub rulesets, required-workflow interpretation, security/dependency automation, release eligibility, broader documentation completeness, and platform-system integration state are not yet implemented.
+- **Classic branch protection:** current source observes classic `BranchProtectionRule` state only. GitHub rulesets remain a separate evidence channel and a repository with no observed classic matching rule must not be described as having no GitHub protection of any kind.
+- **Governance GraphQL runtime:** deterministic source/fixture coverage exists; representative live private-repository GraphQL permission, pagination, and rate-budget validation remains pending.
 - **GitHub Actions coverage:** best-effort and dependent on the least-privilege runtime credential's supported read permission.
 - **Private deployment:** source contains the deployment boundary, but an authenticated private-access layer and production runtime have not been accepted.
 - **Live GitHub validation:** deterministic fixtures exist; representative live public/private repository validation remains required.
@@ -61,7 +65,7 @@ This record distinguishes verified source functionality from work that is partia
 
 - GitHub repository, issue, pull-request, release, workflow, branch-protection, ruleset, or settings mutations.
 - Authoritative machine-readable repository role/type registry.
-- Automated branch-protection or ruleset enforcement.
+- GitHub ruleset observation or automated branch/ruleset enforcement.
 - Hosted secret-scanning acceptance evidence for the repository.
 - Release eligibility certification for peer repositories.
 - GoreeCloud Identity authentication or authorization integration.
