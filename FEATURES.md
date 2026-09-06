@@ -25,16 +25,19 @@ This record distinguishes verified source functionality from work that is partia
 - Strict browser security headers and sanitized API failure responses.
 - Light/dark appearance support, visible focus, Reduced Motion, Increased Contrast, Forced Colors, and solid-surface resilience.
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
-- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, and refresh-policy tests.
+- GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, and nonconformant status.
+- Exact-head Platform Contract CI wrapper pinned to the reviewed central contract implementation, including computed-result schema validation and a fail-closed Stable-eligibility assertion.
+- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, Glaze-migration, and product/conformance source tests.
 
 ## Partial or acceptance-gated
 
 - **GLAZE UI V1.1:** source migration is in progress; rendered, accessibility, resilience, and form-factor acceptance remain pending.
+- **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **GitHub Actions coverage:** best-effort and dependent on the least-privilege runtime credential's supported read permission.
 - **Private deployment:** source contains the deployment boundary, but an authenticated private-access layer and production runtime have not been accepted.
 - **Live GitHub validation:** deterministic fixtures exist; representative live public/private repository validation remains required.
 - **Product identity:** text-first presentation is intentional until a unique canonical dashboard identity is approved.
-- **Platform-system conformance:** source-level privacy/security/continuity controls exist, but all seven GoreeCloud Platform Systems remain subject to the statuses in `docs/PLATFORM_CONFORMANCE.md`.
+- **Platform-system conformance:** source-level privacy/security/continuity controls exist, but all seven GoreeCloud Platform Systems remain subject to the blocked/nonconformant statuses in `docs/PLATFORM_CONFORMANCE.md`.
 
 ## Not currently implemented or approved
 
@@ -44,6 +47,7 @@ This record distinguishes verified source functionality from work that is partia
 - Accepted Wardveil Security integration.
 - Accepted Privacy Shield integration.
 - Accepted Everkeep backup/restore integration.
+- Accepted GoreeCloud Manager integration.
 - Production Cloudflare Pages deployment approval.
 - Authorization-aware private-data shared caching.
 - TV/far-view support.

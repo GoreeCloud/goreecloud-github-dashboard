@@ -4,11 +4,13 @@ const requiredFiles = [
   "COMPETITIVE-OBJECTIVES.md",
   "FEATURES.md",
   "BENEFITS.md",
+  "goreecloud.platform.yaml",
   "docs/GLAZE_UI_CONFORMANCE.md",
   "docs/PLATFORM_CONFORMANCE.md",
   "public/glaze-ui.js",
   "public/glaze-v1.1.css",
   "tests/glaze-ui-conformance.test.mjs",
+  ".github/workflows/platform-contract.yml",
 ];
 
 const failures = [];
@@ -23,6 +25,8 @@ if (!failures.length) {
   const glazeRuntime = fs.readFileSync("public/glaze-ui.js", "utf8");
   const glazeMapping = fs.readFileSync("docs/GLAZE_UI_CONFORMANCE.md", "utf8");
   const platform = fs.readFileSync("docs/PLATFORM_CONFORMANCE.md", "utf8");
+  const manifest = fs.readFileSync("goreecloud.platform.yaml", "utf8");
+  const platformWorkflow = fs.readFileSync(".github/workflows/platform-contract.yml", "utf8");
 
   for (const record of ["COMPETITIVE-OBJECTIVES.md", "FEATURES.md", "BENEFITS.md"]) {
     if (!readme.includes(record)) failures.push(`README must link ${record}`);
@@ -54,6 +58,32 @@ if (!failures.length) {
     "GoreeCloud Identity",
   ]) {
     if (!platform.includes(system)) failures.push(`Platform conformance must evaluate ${system}.`);
+  }
+
+  for (const marker of [
+    'schema_version: "0.2"',
+    "component:\n  type: application\n  id: github-dashboard",
+    "repository: GoreeCloud/goreecloud-github-dashboard",
+    "lifecycle: development",
+    "version: 0.3.0-dev",
+    'glaze_ui_required: "1.1.0"',
+    "status: nonconformant",
+  ]) {
+    if (!manifest.includes(marker)) failures.push(`Platform manifest missing required marker: ${marker}`);
+  }
+
+  if (manifest.includes("result: applicable-conformant")) {
+    failures.push("Development manifest must not claim an accepted platform-system integration without evidence.");
+  }
+
+  if (!platformWorkflow.includes("4a0ebf20ffb669e3d5680ab6c8d34583f1712966")) {
+    failures.push("Platform Contract validation must pin the reviewed central implementation revision.");
+  }
+  if (!platformWorkflow.includes("github.event.pull_request.head.sha")) {
+    failures.push("Platform Contract validation must resolve pull requests to the exact head SHA.");
+  }
+  if (!platformWorkflow.includes("result['stable_eligible'] is False")) {
+    failures.push("Platform Contract workflow must verify Development is not Stable-eligible.");
   }
 }
 

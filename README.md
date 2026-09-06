@@ -26,6 +26,7 @@ The application is deliberately text-first while its unique canonical product ic
 - Development-stage GLAZE UI V1.1 source mapping with solid durable data surfaces, navigation-only Glaze material, 48 px touch targets, and purpose-built Tablet navigation.
 - Light, dark, reduced-motion, reduced-transparency fallback, increased-contrast, and forced-colors resilience.
 - Fail-closed private-data gate for Cloudflare Pages deployments.
+- GoreeCloud Platform Contract v0.2 root declaration with exact-head Development conformance validation.
 
 See [FEATURES.md](FEATURES.md) for the explicit implemented/partial/not-approved capability boundary.
 
@@ -53,7 +54,9 @@ The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMA
 
 ## Platform conformance
 
-The seven GoreeCloud Platform Systems and their current implementation status are recorded in [docs/PLATFORM_CONFORMANCE.md](docs/PLATFORM_CONFORMANCE.md). The dashboard remains Development and nonconformant while applicable Identity, Mesh, Wardveil, Privacy Shield, Everkeep, Manager, and Glaze acceptance gates remain incomplete.
+The repository-root [goreecloud.platform.yaml](goreecloud.platform.yaml) declares GoreeCloud Platform Contract v0.2 state. All seven GoreeCloud Platform Systems and their current implementation status are explained in [docs/PLATFORM_CONFORMANCE.md](docs/PLATFORM_CONFORMANCE.md). The manifest is deliberately `nonconformant`, and the dashboard remains Development while applicable Identity, Mesh, Wardveil, Privacy Shield, Everkeep, Manager, and Glaze acceptance gates remain incomplete.
+
+The Platform Contract workflow pins the reviewed central contract implementation and validates the exact pull-request head rather than using a synthetic PR merge revision. A passing manifest check does not promote lifecycle status or establish any platform-system acceptance.
 
 ## Local development
 
@@ -76,7 +79,7 @@ npm test
 npm run check
 ```
 
-Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, cache policy, data health, and the current GLAZE UI V1.1 source-migration contract.
+Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
 
 Deterministic representative GitHub fixtures exercise the complete dashboard aggregation path without live credentials. They verify private-repository normalization and owner filtering, complete coverage, Actions permission denial, the distinction between confirmed optional `404` absence and unavailable permission-denied evidence, fail-soft rate-limit loss, and sanitized core GitHub failures. Fixture validation strengthens source confidence but does not replace live private-repository validation, rendered form-factor acceptance, or deployment acceptance.
 
@@ -86,6 +89,7 @@ Deterministic representative GitHub fixtures exercise the complete dashboard agg
 - [FEATURES.md](FEATURES.md) — current, partial, acceptance-gated, and unapproved functionality.
 - [BENEFITS.md](BENEFITS.md) — benefits supported by current Development source and benefits not yet claimed.
 - [BRANDING.md](BRANDING.md) — current canonical identity boundary.
+- [goreecloud.platform.yaml](goreecloud.platform.yaml) — machine-readable Platform Contract v0.2 declaration.
 
 ## Deployment
 
