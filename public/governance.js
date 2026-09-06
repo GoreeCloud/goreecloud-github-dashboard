@@ -72,6 +72,12 @@ function emptyState(message) {
   return element;
 }
 
+function coverageLabel(status) {
+  if (status === "complete") return "Observed";
+  if (status === "unavailable") return "Unavailable";
+  return "Partial";
+}
+
 function renderProbes(probes = []) {
   const container = byId("probe-list");
   clear(container);
@@ -92,7 +98,7 @@ function renderProbes(probes = []) {
     title.className = "item-title";
     title.textContent = probe.label || PROBE_LABELS[probe.key] || probe.key;
     const badge = createBadge(
-      probe.status === "complete" ? "Observed" : "Partial",
+      coverageLabel(probe.status),
       probe.status === "complete" ? "success" : "private",
     );
     header.append(title, badge);
@@ -186,11 +192,13 @@ function renderGovernance(data) {
   setText("stat-unavailable", summary.unavailableRepositories ?? 0);
   setPill("generated-at", `Updated ${formatRelative(data.generatedAt)}`);
   setPill("api-state", "Read-only governance connected", true);
-  setPill(
-    "coverage-state",
-    governance.status === "complete" ? "Observation complete" : "Observation partial",
-    governance.status === "complete",
-  );
+
+  const coverageText = governance.status === "complete"
+    ? "Observation complete"
+    : governance.status === "unavailable"
+      ? "Observation unavailable"
+      : "Observation partial";
+  setPill("coverage-state", coverageText, governance.status === "complete");
   setText("sidebar-status", `${summary.checkedRepositories ?? 0} repositories safely observed`);
 
   renderProbes(governance.probes || []);
