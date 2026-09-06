@@ -27,16 +27,18 @@ The application is deliberately text-first while its unique canonical product ic
 - Searchable repository directory with visibility, language, activity, and open-work metadata.
 - Safe process-level `/api/health` and fail-closed configuration-level `/api/ready` operational interfaces.
 - Four-state appearance control: System, Light, Dark, and explicit Deep Dark. System follows the operating-system preference; Deep Dark is opt-in.
+- Shared native appearance controller used by both dashboard and governance views; the superseded binary Light/Dark renderer listener has been removed.
 - Development-stage GLAZE UI V1.1 source mapping with solid durable data surfaces, navigation-only Glaze material, 48 px touch targets, purpose-built Tablet navigation, Reduced Transparency fallback, and a solid fallback before optional `color-mix()` enhancement.
 - Visible focus, Reduced Motion, Increased Contrast, and Forced Colors resilience.
 - Fail-closed private-data gate for Cloudflare Pages deployments.
+- Public-source safety validation for credential, private-key, browser-authentication, example-configuration, and exported-data boundaries.
 - GoreeCloud Platform Contract v0.2 root declaration with exact-head Development conformance validation.
 
 See [FEATURES.md](FEATURES.md) for the explicit implemented/partial/not-approved capability boundary.
 
 ## Privacy and security boundary
 
-The public source repository must never contain reusable credentials, private deployment configuration, or non-public GoreeCloud repository data. Public source visibility is therefore independent from operational data visibility.
+The public source repository must never contain reusable credentials, private deployment configuration, or non-public GoreeCloud repository data. Public source visibility is therefore independent from operational data visibility. See [docs/PUBLIC_SOURCE_BOUNDARY.md](docs/PUBLIC_SOURCE_BOUNDARY.md) for the enforced source/deployment separation.
 
 This dashboard is designed to display private repository metadata. The GitHub credential must therefore stay server-side in a Cloudflare Pages Function secret and must be read-only. It must never be embedded in browser JavaScript, HTML, build output, screenshots, documentation, or source control.
 
@@ -62,9 +64,9 @@ See [docs/OPERATIONAL_HEALTH.md](docs/OPERATIONAL_HEALTH.md) for exact semantics
 
 ## GLAZE UI migration
 
-The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMANCE.md](docs/GLAZE_UI_CONFORMANCE.md). It targets GLAZE UI V1.1 / 1.1.0 and deliberately records rendered and production acceptance as pending. The migration layer is loaded before the appearance policy, refresh guard, and application renderer so the active UI exposes the current source target rather than the superseded historical label.
+The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMANCE.md](docs/GLAZE_UI_CONFORMANCE.md). It targets GLAZE UI V1.1 / 1.1.0 and deliberately records rendered and production acceptance as pending. The migration layer is loaded before the appearance controller, refresh guard, and application renderer so the active UI exposes the current source target rather than the superseded historical label.
 
-Appearance now cycles `System → Light → Dark → Deep Dark → System`. The System state keeps operating-system Light/Dark behavior, while Deep Dark remains an explicit near-black mode. The appearance migration guard captures the existing appearance control before the legacy binary listener, keeping the new policy isolated from the read-only dashboard data renderer until a later renderer cleanup can remove the superseded binary theme code.
+Appearance cycles `System → Light → Dark → Deep Dark → System`. The System state keeps operating-system Light/Dark behavior, while Deep Dark remains an explicit near-black mode. A shared appearance controller now owns initialization, persistence, accessible current/next-mode labeling, and the appearance button on both dashboard and governance pages. The prior binary renderer listener and capture-phase migration workaround have been removed.
 
 ## Platform conformance
 
@@ -93,7 +95,7 @@ npm test
 npm run check
 ```
 
-Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, operational health/readiness, appearance-policy behavior, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
+Validation covers repository structure, public-source safety, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, operational health/readiness, native four-state appearance-controller behavior, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
 
 Deterministic representative GitHub fixtures exercise the complete dashboard aggregation path without live credentials. They verify private-repository normalization and owner filtering, complete coverage, Actions permission denial, the distinction between confirmed optional `404` absence and unavailable permission-denied evidence, fail-soft rate-limit loss, and sanitized core GitHub failures. Fixture validation strengthens source confidence but does not replace live private-repository validation, rendered form-factor acceptance, or deployment acceptance.
 
@@ -103,6 +105,7 @@ Deterministic representative GitHub fixtures exercise the complete dashboard agg
 - [FEATURES.md](FEATURES.md) — current, partial, acceptance-gated, and unapproved functionality.
 - [BENEFITS.md](BENEFITS.md) — benefits supported by current Development source and benefits not yet claimed.
 - [BRANDING.md](BRANDING.md) — current canonical identity boundary.
+- [docs/PUBLIC_SOURCE_BOUNDARY.md](docs/PUBLIC_SOURCE_BOUNDARY.md) — public/open-source source contract and private authenticated deployment boundary.
 - [goreecloud.platform.yaml](goreecloud.platform.yaml) — machine-readable Platform Contract v0.2 declaration.
 
 ## Deployment
