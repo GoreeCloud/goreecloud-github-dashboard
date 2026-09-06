@@ -18,6 +18,8 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Fail-closed `/api/ready` configuration-readiness endpoint that requires both server-side GitHub credential configuration and confirmed external private-access configuration without revealing which prerequisite is missing.
 - `docs/OPERATIONAL_HEALTH.md` defining health/readiness semantics, cache/security boundaries, and the distinction between source-level readiness and production acceptance.
 - Health/readiness contract tests covering version synchronization, private no-store responses, generic not-ready behavior, secret non-disclosure, configuration-ready behavior, and non-GET rejection.
+- `public/theme-policy.js` and `public/appearance-guard.js` implementing a deterministic four-state `System → Light → Dark → Deep Dark → System` appearance policy without coupling appearance changes to the GitHub data renderer.
+- Appearance-policy tests covering the four-state cycle, invalid-value normalization, accessible state labels/icons, bootstrap order, capture behavior, System dark-preference support, Deep Dark source tokens, and the solid `color-mix()` fallback.
 
 ### Changed
 
@@ -29,7 +31,11 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Replaced the compressed Tablet first-letter navigation rail with a full-label horizontal Tablet navigation composition.
 - Durable dashboard panels no longer depend on backdrop blur; active form-factor navigation remains the primary Glaze surface.
 - Touch-capable buttons, icon buttons, search, navigation, and mobile navigation now use a 48 px minimum source target.
-- `npm run check` now validates product/conformance records, operational endpoint invariants, Platform Contract source invariants, and syntax-checks the GLAZE UI plus health/readiness runtime modules.
+- System appearance now follows the operating-system Light/Dark preference, while Deep Dark is a separate explicit near-black mode rather than an automatically inferred state.
+- The appearance button now exposes the current and next mode through an accessible label and persists only the selected appearance mode.
+- The optional hero `color-mix()` treatment now has an immediately preceding solid-surface fallback so unsupported color mixing cannot restore the superseded translucent panel material.
+- Bootstrap order now applies GLAZE UI source state, the appearance migration guard, refresh discipline, and then the legacy renderer in that order.
+- `npm run check` now validates product/conformance records, appearance-policy invariants, operational endpoint invariants, Platform Contract source invariants, and syntax-checks the GLAZE UI, appearance, health/readiness, and dashboard runtime modules.
 - README now links the competitive objectives, features, benefits, branding, operational health record, Glaze UI mapping, root Platform Contract declaration, and seven-system platform-conformance records.
 
 ### Security and truthfulness
@@ -41,6 +47,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Platform Contract validation is declaration/conformance evidence only; it cannot upgrade blocked integrations or missing acceptance into positive platform claims.
 - Readiness returns one generic `deployment_not_ready` state and does not disclose whether the server-side credential or private-access confirmation is missing.
 - Health/readiness endpoints are private no-store, read-only, and do not expose credential material.
+- Appearance persistence stores only the non-sensitive selected appearance mode and does not alter the server-side credential or private-data boundary.
 - The project remains in the Development lifecycle and the manifest deliberately declares `nonconformant`.
 
 ## 0.3.0-dev — 2026-08-21
@@ -105,7 +112,7 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Critical attention for latest failed/cancelled/timed-out/action-required/startup-failure/stale workflow conclusions.
 - Review attention for ranked repositories with more than 90 days since the latest push or at least 15 GitHub-reported open issues/pull requests.
 - Informational attention when no repository-local changelog is detected in successfully probed paths.
-- Best-effort latest GitHub Actions workflow status for each Top 10 repository.
+- Best-effort latest GitHub Actions status for each Top 10 repositories.
 - Explicit complete/partial data-coverage metadata so unavailable optional reads are not hidden.
 - Normalized GitHub core/search rate-limit metadata with browser-visible remaining core API budget.
 - AbortController-backed 8-second default timeout protection for every GitHub request, with bounded internal override values and cleanup of timers/forwarded abort listeners.
