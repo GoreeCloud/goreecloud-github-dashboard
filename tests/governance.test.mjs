@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   GOVERNANCE_PROBES,
+  buildClassicBranchProtectionGraphqlQuery,
   buildGovernanceGraphqlQuery,
   fetchGovernanceCoverage,
 } from "../functions/lib/governance.js";
@@ -42,6 +43,44 @@ function completeNode(name, missing = []) {
   };
 }
 
+function classicRule(defaultBranch, overrides = {}) {
+  return {
+    pattern: defaultBranch,
+    allowsDeletions: false,
+    allowsForcePushes: false,
+    isAdminEnforced: true,
+    requireLastPushApproval: true,
+    requiredApprovingReviewCount: 2,
+    requiredStatusCheckContexts: ["Validate GitHub dashboard foundation"],
+    requiresApprovingReviews: true,
+    requiresCodeOwnerReviews: true,
+    requiresCommitSignatures: false,
+    requiresConversationResolution: true,
+    requiresLinearHistory: false,
+    requiresStatusChecks: true,
+    requiresStrictStatusChecks: true,
+    matchingRefs: {
+      pageInfo: { hasNextPage: false },
+      nodes: [{ name: defaultBranch }],
+    },
+    ...overrides,
+  };
+}
+
+function protectionNode(name, defaultBranch = "main", { protectedBranch = true, hasNextPage = false } = {}) {
+  return {
+    name,
+    branchProtectionRules: {
+      pageInfo: { hasNextPage },
+      nodes: protectedBranch ? [classicRule(defaultBranch)] : [],
+    },
+  };
+}
+
+function queryFromOptions(options = {}) {
+  return JSON.parse(options.body || "{}").query || "";
+}
+
 test("governance GraphQL query binds exact default branches and governed paths", () => {
   const query = buildGovernanceGraphqlQuery(OWNER, [
     repository("alpha", { default_branch: "master" }),
@@ -56,17 +95,45 @@ test("governance GraphQL query binds exact default branches and governed paths",
   assert.match(query, /release\/v1:goreecloud\.platform\.yaml/);
 });
 
-test("governance coverage reports observed presence and absence without calling absence compliance", async () => {
+test("classic branch-protection GraphQL query asks GitHub which rules match each exact default branch", () => {
+  const query = buildClassicBranchProtectionGraphqlQuery(OWNER, [
+    repository("alpha", { default_branch: "main" }),
+    repository("beta", { default_branch: "release/v1" }),
+  ]);
+
+  assert.match(query, /GoreeCloudClassicBranchProtectionObservation/);
+  assert.match(query, /branchProtectionRules\(first: 100\)/);
+  assert.match(query, /matchingRefs\(first: 10, query: "main"\)/);
+  assert.match(query, /matchingRefs\(first: 10, query: "release\/v1"\)/);
+  assert.match(query, /requiresApprovingReviews/);
+  assert.match(query, /requiresCodeOwnerReviews/);
+  assert.match(query, /requiresCommitSignatures/);
+  assert.match(query, /requiresStatusChecks/);
+  assert.match(query, /requiresStrictStatusChecks/);
+});
+
+test("governance coverage reports file presence and classic default-branch protection as separate observations", async () => {
   const repositories = [repository("alpha"), repository("beta", { visibility: "public", private: false })];
   const originalFetch = globalThis.fetch;
   let requests = 0;
 
   globalThis.fetch = async (input, options = {}) => {
     const url = new URL(String(input));
+    const query = queryFromOptions(options);
     assert.equal(url.pathname, "/graphql");
     assert.equal(options.method, "POST");
     assert.equal(options.headers?.Authorization, `Bearer ${TOKEN}`);
     requests += 1;
+
+    if (query.includes("GoreeCloudClassicBranchProtectionObservation")) {
+      return response({
+        data: {
+          r0: protectionNode("alpha", "main", { protectedBranch: true }),
+          r1: protectionNode("beta", "main", { protectedBranch: false }),
+        },
+      });
+    }
+
     return response({
       data: {
         r0: completeNode("alpha", ["contributing"]),
@@ -82,8 +149,9 @@ test("governance coverage reports observed presence and absence without calling 
       repositories,
     );
 
-    assert.equal(requests, 1);
+    assert.equal(requests, 2);
     assert.equal(coverage.status, "complete");
+    assert.equal(coverage.fileStatus, "complete");
     assert.equal(coverage.totalRepositories, 2);
     assert.equal(coverage.checkedRepositories, 2);
     assert.equal(coverage.unavailableRepositories, 0);
@@ -96,20 +164,41 @@ test("governance coverage reports observed presence and absence without calling 
     assert.equal(contributing.unavailable, 0);
     assert.equal(contributing.status, "complete");
 
+    assert.deepEqual(coverage.classicBranchProtection, {
+      status: "complete",
+      checkedRepositories: 2,
+      protectedRepositories: 1,
+      unprotectedRepositories: 1,
+      unavailableRepositories: 0,
+      scope: "classic-default-branch-rules",
+    });
+
     const alpha = coverage.repositories.find((item) => item.name === "alpha");
     assert.equal(alpha.status, "gaps");
     assert.deepEqual(alpha.missingChecks, ["contributing"]);
     assert.equal(alpha.checksAvailable, true);
+    assert.equal(alpha.classicBranchProtection.available, true);
+    assert.equal(alpha.classicBranchProtection.defaultBranchProtected, true);
+    assert.equal(alpha.classicBranchProtection.matchingRules.length, 1);
+    assert.equal(alpha.classicBranchProtection.matchingRules[0].requiredApprovingReviewCount, 2);
+    assert.equal(alpha.classicBranchProtection.matchingRules[0].requiresCodeOwnerReviews, true);
+    assert.deepEqual(
+      alpha.classicBranchProtection.matchingRules[0].requiredStatusCheckContexts,
+      ["Validate GitHub dashboard foundation"],
+    );
 
     const beta = coverage.repositories.find((item) => item.name === "beta");
     assert.equal(beta.status, "observed");
     assert.deepEqual(beta.missingChecks, []);
+    assert.equal(beta.classicBranchProtection.available, true);
+    assert.equal(beta.classicBranchProtection.defaultBranchProtected, false);
+    assert.deepEqual(beta.classicBranchProtection.matchingRules, []);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("GraphQL errors remain unavailable instead of becoming false missing-file claims", async () => {
+test("GraphQL errors remain unavailable instead of becoming false missing-file or branch-protection claims", async () => {
   const repositories = [repository("alpha"), repository("beta")];
   const originalFetch = globalThis.fetch;
 
@@ -126,31 +215,70 @@ test("GraphQL errors remain unavailable instead of becoming false missing-file c
     );
 
     assert.equal(coverage.status, "unavailable");
+    assert.equal(coverage.fileStatus, "unavailable");
     assert.equal(coverage.checkedRepositories, 0);
     assert.equal(coverage.unavailableRepositories, 2);
     assert.equal(coverage.repositoriesWithObservedGaps, 0);
+    assert.equal(coverage.classicBranchProtection.status, "unavailable");
+    assert.equal(coverage.classicBranchProtection.checkedRepositories, 0);
+    assert.equal(coverage.classicBranchProtection.unprotectedRepositories, 0);
+    assert.equal(coverage.classicBranchProtection.unavailableRepositories, 2);
     assert.ok(coverage.repositories.every((item) => item.status === "unavailable"));
     assert.ok(coverage.repositories.every((item) => item.missingChecks.length === 0));
+    assert.ok(coverage.repositories.every((item) => item.classicBranchProtection.available === false));
+    assert.ok(coverage.repositories.every((item) => item.classicBranchProtection.defaultBranchProtected === null));
     assert.ok(coverage.probes.every((probe) => probe.status === "unavailable"));
     assert.ok(coverage.probes.every((probe) => probe.absent === 0));
-    assert.ok(coverage.probes.every((probe) => probe.unavailable === 2));
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("governance observation batches are bounded and preserve successful peer batches", async () => {
+test("incomplete branch-protection pagination stays unavailable instead of becoming a false no-rule observation", async () => {
+  const repositories = [repository("alpha")];
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (input, options = {}) => {
+    const query = queryFromOptions(options);
+    if (query.includes("GoreeCloudClassicBranchProtectionObservation")) {
+      return response({ data: { r0: protectionNode("alpha", "main", { protectedBranch: false, hasNextPage: true }) } });
+    }
+    return response({ data: { r0: completeNode("alpha") } });
+  };
+
+  try {
+    const coverage = await fetchGovernanceCoverage({ GITHUB_TOKEN: TOKEN }, OWNER, repositories);
+    assert.equal(coverage.fileStatus, "complete");
+    assert.equal(coverage.classicBranchProtection.status, "unavailable");
+    assert.equal(coverage.classicBranchProtection.unprotectedRepositories, 0);
+    assert.equal(coverage.status, "partial");
+    assert.equal(coverage.repositories[0].classicBranchProtection.available, false);
+    assert.equal(coverage.repositories[0].classicBranchProtection.defaultBranchProtected, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("governance observation batches are bounded and preserve independent successful evidence channels", async () => {
   const repositories = Array.from({ length: 21 }, (_, index) => repository(`repo-${String(index + 1).padStart(2, "0")}`));
   const originalFetch = globalThis.fetch;
   let requests = 0;
 
-  globalThis.fetch = async () => {
+  globalThis.fetch = async (input, options = {}) => {
     requests += 1;
-    if (requests === 2) return response({ message: "fixture failure" }, 503);
+    const query = queryFromOptions(options);
+    const isSecondBatch = query.includes('name: "repo-21"') && !query.includes('name: "repo-01"');
+    const isProtection = query.includes("GoreeCloudClassicBranchProtectionObservation");
 
+    if (!isProtection && isSecondBatch) return response({ message: "fixture failure" }, 503);
+
+    const batch = isSecondBatch ? repositories.slice(20) : repositories.slice(0, 20);
     return response({
       data: Object.fromEntries(
-        repositories.slice(0, 20).map((item, index) => [`r${index}`, completeNode(item.name)]),
+        batch.map((item, index) => [
+          `r${index}`,
+          isProtection ? protectionNode(item.name, item.default_branch, { protectedBranch: true }) : completeNode(item.name),
+        ]),
       ),
     });
   };
@@ -163,14 +291,22 @@ test("governance observation batches are bounded and preserve successful peer ba
       { batchSize: 20 },
     );
 
-    assert.equal(requests, 2);
+    assert.equal(requests, 4);
     assert.equal(coverage.status, "partial");
+    assert.equal(coverage.fileStatus, "partial");
     assert.equal(coverage.checkedRepositories, 20);
     assert.equal(coverage.unavailableRepositories, 1);
     assert.equal(coverage.repositoriesWithAllObservedFiles, 20);
     assert.equal(coverage.repositoriesWithObservedGaps, 0);
     assert.ok(coverage.probes.every((probe) => probe.status === "partial"));
-    assert.equal(coverage.repositories.find((item) => item.name === "repo-21").status, "unavailable");
+    assert.equal(coverage.classicBranchProtection.status, "complete");
+    assert.equal(coverage.classicBranchProtection.checkedRepositories, 21);
+    assert.equal(coverage.classicBranchProtection.protectedRepositories, 21);
+
+    const repo21 = coverage.repositories.find((item) => item.name === "repo-21");
+    assert.equal(repo21.status, "unavailable");
+    assert.equal(repo21.classicBranchProtection.available, true);
+    assert.equal(repo21.classicBranchProtection.defaultBranchProtected, true);
   } finally {
     globalThis.fetch = originalFetch;
   }
