@@ -39,18 +39,23 @@ export async function onRequestGet(context) {
   try {
     const repositories = await fetchAllRepositories(env, owner);
     const governance = await fetchGovernanceCoverage(env, owner, repositories);
+    const classicProtection = governance.classicBranchProtection || {};
 
     return json({
       generatedAt: new Date().toISOString(),
       owner,
       mode: "read-only",
-      observationModel: "presence-only",
+      observationModel: "presence-and-classic-branch-protection",
       summary: {
         totalRepositories: governance.totalRepositories,
         checkedRepositories: governance.checkedRepositories,
         unavailableRepositories: governance.unavailableRepositories,
         repositoriesWithAllObservedFiles: governance.repositoriesWithAllObservedFiles,
         repositoriesWithObservedGaps: governance.repositoriesWithObservedGaps,
+        classicProtectionCheckedRepositories: classicProtection.checkedRepositories || 0,
+        classicProtectedRepositories: classicProtection.protectedRepositories || 0,
+        classicUnprotectedRepositories: classicProtection.unprotectedRepositories || 0,
+        classicProtectionUnavailableRepositories: classicProtection.unavailableRepositories || 0,
       },
       governance,
     });
