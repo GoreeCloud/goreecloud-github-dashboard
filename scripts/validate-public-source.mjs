@@ -155,8 +155,8 @@ export function validatePublicSource(root = process.cwd()) {
 
   if (exists("README.md")) {
     const readme = read("README.md");
-    if (!/public\/open-source/i.test(readme)) failures.push("README must state the public/open-source repository model.");
-    if (!/private authenticated/i.test(readme)) failures.push("README must state the private authenticated deployment model.");
+    if (!/public(?:\s*\/\s*|\s+and\s+)open[- ]source/i.test(readme)) failures.push("README must state the public/open-source repository model.");
+    if (!/private(?:\s+and)?\s+authenticated/i.test(readme)) failures.push("README must state the private authenticated deployment model.");
   }
 
   return failures;
