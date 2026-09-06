@@ -11,6 +11,27 @@ function installGlazeStyle() {
   document.head.append(link);
 }
 
+function installGovernanceNavigation() {
+  const primaryNavigation = document.querySelector(".nav-list");
+  if (primaryNavigation && !primaryNavigation.querySelector('a[href="/governance.html"]')) {
+    const link = document.createElement("a");
+    link.className = "nav-item";
+    link.href = "/governance.html";
+    link.textContent = "Governance";
+    primaryNavigation.append(link);
+  }
+
+  const isGovernanceView = window.location.pathname.endsWith("/governance.html");
+  const heroMeta = document.querySelector(".hero-meta");
+  if (!isGovernanceView && heroMeta && !heroMeta.querySelector('a[href="/governance.html"]')) {
+    const link = document.createElement("a");
+    link.className = "pill";
+    link.href = "/governance.html";
+    link.textContent = "Governance";
+    heroMeta.prepend(link);
+  }
+}
+
 function synchronizeGlazeStatus() {
   document.documentElement.dataset.glazeUiVersion = GLAZE_UI_VERSION;
   document.documentElement.dataset.glazeUiAcceptance = GLAZE_UI_ACCEPTANCE;
@@ -22,4 +43,5 @@ function synchronizeGlazeStatus() {
 }
 
 installGlazeStyle();
+installGovernanceNavigation();
 synchronizeGlazeStatus();
