@@ -7,6 +7,10 @@ This record distinguishes verified source functionality from work that is partia
 - Read-only Cloudflare Pages Function aggregation of GoreeCloud GitHub repository data.
 - Server-side GitHub credential boundary; reusable credentials are not shipped to the browser.
 - Fail-closed `ACCESS_GATE_CONFIRMED` deployment interlock before private dashboard data is returned.
+- Intentional public/open-source repository model separated from the private authenticated operational deployment boundary.
+- Automated public-source safety validation that rejects common reusable GitHub/Cloudflare credentials, private-key signatures, credentialed URLs, forbidden local secret files, and exported data/secret artifacts under `public/`.
+- Browser-source safety checks that reject direct `api.github.com` references, authorization-header logic, and `GITHUB_TOKEN` references in publicly retrievable application assets.
+- Non-secret example configuration contract requiring a blank `GITHUB_TOKEN`, `ACCESS_GATE_CONFIRMED=false`, ignored local secret files, and npm `private=true` as an accidental-package-publication guard rather than a repository-visibility setting.
 - Recent commit aggregation with bounded repository enumeration and fan-out.
 - Top 10 repository ranking based primarily on current operational activity.
 - Total, public, and private repository counts.
@@ -35,13 +39,14 @@ This record distinguishes verified source functionality from work that is partia
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
 - GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, health/readiness interfaces, governance endpoint/dependency metadata, and nonconformant status.
 - Exact-head Platform Contract CI wrapper pinned to the reviewed central contract implementation, including computed-result schema validation and a fail-closed Stable-eligibility assertion.
-- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, governance-observation, Glaze-migration, and product/conformance source tests.
+- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, governance-observation, public-source-policy, Glaze-migration, and product/conformance source tests.
 
 ## Partial or acceptance-gated
 
 - **GLAZE UI V1.1:** source migration now includes System, Light, Dark, and Deep Dark appearance states; rendered, accessibility, resilience, optical-quality, and form-factor acceptance remain pending.
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
+- **Public-source safety:** repository-local detection and source contracts are implemented, but hosted secret scanning, dependency/security automation, branch/ruleset enforcement, signed release provenance, and production deployment security validation remain separate acceptance work.
 - **Governance control plane:** baseline file presence observation is implemented, but repository role/type, applicability, manifest validation for peer repositories, branch/ruleset enforcement, required workflow state, security/dependency automation, release eligibility, broader documentation completeness, and platform-system integration state are not yet implemented.
 - **Governance GraphQL runtime:** deterministic source/fixture coverage exists; representative live private-repository GraphQL permission and rate-budget validation remains pending.
 - **GitHub Actions coverage:** best-effort and dependent on the least-privilege runtime credential's supported read permission.
@@ -55,6 +60,7 @@ This record distinguishes verified source functionality from work that is partia
 - GitHub repository, issue, pull-request, release, workflow, branch-protection, ruleset, or settings mutations.
 - Authoritative machine-readable repository role/type registry.
 - Automated branch-protection or ruleset enforcement.
+- Hosted secret-scanning acceptance evidence for the repository.
 - Release eligibility certification for peer repositories.
 - GoreeCloud Identity authentication or authorization integration.
 - GoreeCloud Mesh capability/event integration.
