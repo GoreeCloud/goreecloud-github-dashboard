@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   RULESET_API_VERSION,
-  buildRulesetCoverage,
   fetchRulesetCoverage,
   normalizeRulesetRule,
 } from "../functions/lib/rulesets.js";
@@ -187,7 +186,7 @@ test("ruleset fan-out is bounded and preserves successful repository observation
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
     const parts = url.pathname.split("/");
-    const repoName = parts[4];
+    const repoName = parts[3];
     inFlight += 1;
     maxInFlight = Math.max(maxInFlight, inFlight);
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -218,13 +217,31 @@ test("ruleset fan-out is bounded and preserves successful repository observation
   }
 });
 
-test("ruleset coverage ignores repositories not owned by the configured owner", () => {
-  const coverage = buildRulesetCoverage(
-    [repository("alpha")],
-    [{ repository: "alpha", available: true, defaultBranch: "main", activeRuleCount: 0, hasActiveRules: false, ruleTypes: [], sources: [], rules: [] }],
-  );
+test("ruleset fetch ignores repositories not owned by the configured owner", async () => {
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests += 1;
+    return response([]);
+  };
 
-  assert.equal(coverage.totalRepositories, 1);
-  assert.equal(coverage.scope, "active-default-branch-rulesets");
-  assert.equal(coverage.apiVersion, RULESET_API_VERSION);
+  try {
+    const coverage = await fetchRulesetCoverage(
+      { GITHUB_TOKEN: TOKEN },
+      OWNER,
+      [
+        repository("alpha"),
+        repository("foreign", { owner: { login: "OtherOwner" } }),
+      ],
+    );
+
+    assert.equal(requests, 1);
+    assert.equal(coverage.totalRepositories, 1);
+    assert.equal(coverage.checkedRepositories, 1);
+    assert.equal(coverage.repositories[0].repository, "alpha");
+    assert.equal(coverage.scope, "active-default-branch-rulesets");
+    assert.equal(coverage.apiVersion, RULESET_API_VERSION);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
