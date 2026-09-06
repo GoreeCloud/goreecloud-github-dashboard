@@ -34,8 +34,13 @@ This record distinguishes verified source functionality from work that is partia
 - Governance baseline-file observations distinguish present, absent, and unavailable evidence; failed GraphQL batches and GraphQL errors are never converted into false missing-file claims.
 - Separate policy-defined documentation evidence for root `README.md`, `SPECIFICATIONS.md`, `FEATURES.md`, `BENEFITS.md`, `COMPETITIVE-OBJECTIVES.md`, and `BRANDING.md`.
 - Documentation evidence reuses the existing bounded GraphQL batch, adding no GitHub endpoint, permission, or repository fan-out.
-- Documentation presence/absence is normalized independently from the four-file baseline and carries `repository-role-unclassified` applicability so the dashboard cannot turn missing files into a repository-policy failure before role/type classification exists.
-- This repository now includes the mandatory root `SPECIFICATIONS.md` and a CI-enforced six-file application/service documentation baseline.
+- Documentation presence/absence is normalized independently from the four-file baseline and remains evidence rather than a policy-satisfaction classification.
+- Bounded documentation applicability classification from exact-default-branch Platform Contract v0.2 declarations: only an explicit `component.type: application` or `component.type: service` inside the `component` mapping is recognized.
+- Platform Contract applicability interpretation is bounded to 32 KiB; absent manifests, unavailable file evidence, unreadable/oversized blobs, malformed declarations, and unknown types remain unclassified rather than being guessed from repository names or descriptions.
+- Raw Platform Contract text used for applicability interpretation remains server-side and is not returned to the browser.
+- Governance API summaries expose the applicability model, classified/unclassified counts, application/service counts, and applicable documentation complete/gap counts.
+- Governance UI exposes `Docs applicable` and `Docs unclassified` portfolio statistics, dynamic applicability-boundary wording, per-repository `Application`/`Service`/`Role unclassified` evidence, and role/applicability search terms.
+- This repository includes the mandatory root `SPECIFICATIONS.md` and a CI-enforced six-file application/service documentation baseline.
 - Separate classic default-branch protection observation using GitHub GraphQL `branchProtectionRules` plus `matchingRefs`, with bounded rule/ref pagination and normalized selected control flags.
 - Separate active ruleset observation using GitHub's exact-branch rules endpoint, including applicable repository- and organization-level active rulesets.
 - Active ruleset fan-out is bounded to six concurrent repository reads by default and eight maximum; a full 100-rule first page is treated as unavailable because pagination completeness cannot be proven from the response-body-only request helper.
@@ -44,7 +49,7 @@ This record distinguishes verified source functionality from work that is partia
 - Required-workflow references are deduplicated and bounded to 20 per workflow rule and 40 per observed repository; unknown repository ids remain unresolved rather than receiving invented names.
 - Required-workflow observation reuses the existing active-ruleset response and adds no GitHub endpoint, permission, or repository fan-out.
 - Baseline/documentation files, classic protection, and active rulesets are independent upstream evidence channels so an unavailable channel does not erase successful peer evidence; workflow-reference availability follows the active-ruleset channel.
-- Governance terminology is deliberately observational: file presence, documentation evidence, matching classic rules, active ruleset rules, and workflow references do not establish policy applicability, lifecycle eligibility, conformance, or Stable qualification.
+- Governance terminology is deliberately observational: file presence, documentation evidence, declared application/service applicability, matching classic rules, active ruleset rules, and workflow references do not establish full manifest validity, policy satisfaction, lifecycle eligibility, computed conformance, or Stable qualification.
 - Four-state appearance policy: System, Light, Dark, and explicit Deep Dark, with an accessible deterministic cycle and persisted user selection.
 - Shared native appearance controller for both dashboard and governance views, including idempotent control installation and fail-soft browser-storage handling.
 - Superseded renderer-local binary Light/Dark logic and its capture-phase migration guard have been removed.
@@ -53,7 +58,7 @@ This record distinguishes verified source functionality from work that is partia
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
 - GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, health/readiness interfaces, governance endpoint/dependency metadata, and nonconformant status.
 - Exact-head Platform Contract CI wrapper pinned to the reviewed central contract implementation, including computed-result schema validation and a fail-closed Stable-eligibility assertion.
-- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, governance-observation, active-ruleset/required-workflow-observation, public-source-policy, Glaze-migration, repository-policy, and product/conformance source tests.
+- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, governance-observation, Platform Contract applicability, active-ruleset/required-workflow-observation, public-source-policy, Glaze-migration, repository-policy, and product/conformance source tests.
 
 ## Partial or acceptance-gated
 
@@ -61,8 +66,8 @@ This record distinguishes verified source functionality from work that is partia
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
 - **Public-source safety:** repository-local detection and source contracts are implemented, but hosted secret scanning, dependency/security automation, branch/ruleset enforcement, signed release provenance, and production deployment security validation remain separate acceptance work.
-- **Governance control plane:** baseline-file, documentation-path, classic default-branch protection, active default-branch ruleset, and required-workflow reference observation are implemented, but repository role/type, applicability, peer-manifest validation, governed-workflow policy evaluation, security/dependency automation interpretation, release eligibility, and platform-system integration state are not yet implemented.
-- **Documentation semantics:** the six policy-defined application/service paths are observed, but the dashboard does not yet know which peer repositories are applications/services or whether a missing path is policy-relevant for that repository.
+- **Governance control plane:** baseline-file, documentation-path, bounded application/service applicability declaration, classic default-branch protection, active default-branch ruleset, and required-workflow reference observation are implemented; full peer-manifest validation, broader governed repository taxonomy, governed-workflow policy evaluation, security/dependency automation interpretation, release eligibility, and platform-system integration state remain pending.
+- **Documentation semantics:** explicit Platform Contract application/service declarations can classify the six-file policy category as applicable, but unclassified repositories remain unresolved and file presence/absence still does not establish policy satisfaction.
 - **Governance runtime:** deterministic source/fixture coverage exists; representative live private-repository REST/GraphQL permission and rate-budget validation remains pending.
 - **Required-workflow semantics:** workflow-rule references are observed, but the dashboard does not decide whether an observed workflow is the applicable GoreeCloud-required workflow, whether the referenced revision is approved, or whether it executed successfully for a particular change.
 - **Other ruleset semantics:** active rule types and sources are observed, but the dashboard does not yet decide whether status-check, code-scanning, merge-queue, deployment, or other rules satisfy GoreeCloud policy.
@@ -75,9 +80,10 @@ This record distinguishes verified source functionality from work that is partia
 ## Not currently implemented or approved
 
 - GitHub repository, issue, pull-request, release, workflow, classic branch-protection, ruleset, or settings mutations.
-- Authoritative machine-readable repository role/type registry.
+- Authoritative machine-readable repository role/type registry beyond explicit per-repository Platform Contract `component.type` declarations.
+- Full peer Platform Contract schema validation and computed conformance inside the dashboard.
 - Automated classic branch-protection or ruleset enforcement.
-- Repository-policy applicability classification for peer documentation paths.
+- Repository-policy applicability classification from governed authorities other than the bounded explicit Platform Contract application/service declaration.
 - Required-workflow policy satisfaction or execution-status certification for peer repositories.
 - Hosted secret-scanning acceptance evidence for the repository.
 - Release eligibility certification for peer repositories.
