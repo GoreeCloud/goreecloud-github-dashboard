@@ -1,6 +1,8 @@
 # GoreeCloud GitHub Dashboard
 
-First-party GoreeCloud repository command center for recent changes, changelogs, top repositories, repository attention, CI health, pull requests, issues, releases, API-budget visibility, and repository inventory. The dashboard is designed for authenticated private operational use even though repository visibility is a separate GitHub configuration concern.
+First-party GoreeCloud repository command center for recent changes, changelogs, top repositories, repository attention, CI health, pull requests, issues, releases, API-budget visibility, and repository inventory.
+
+**Visibility model:** this GitHub repository is intentionally **public and open source**. The operational dashboard deployment remains **private and authenticated** whenever it can access or display non-public GoreeCloud repository data.
 
 ## Status
 
@@ -33,6 +35,8 @@ The application is deliberately text-first while its unique canonical product ic
 See [FEATURES.md](FEATURES.md) for the explicit implemented/partial/not-approved capability boundary.
 
 ## Privacy and security boundary
+
+The public source repository must never contain reusable credentials, private deployment configuration, or non-public GoreeCloud repository data. Public source visibility is therefore independent from operational data visibility.
 
 This dashboard is designed to display private repository metadata. The GitHub credential must therefore stay server-side in a Cloudflare Pages Function secret and must be read-only. It must never be embedded in browser JavaScript, HTML, build output, screenshots, documentation, or source control.
 
@@ -103,7 +107,7 @@ Deterministic representative GitHub fixtures exercise the complete dashboard agg
 
 ## Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Do not publish the dashboard with private repository access until its private-access boundary is configured and verified.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The source repository may remain public; do not expose the operational dashboard or its private-repository API data until the authenticated private-access boundary is configured and verified.
 
 ## Architecture
 
