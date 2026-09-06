@@ -12,8 +12,9 @@ function installGlazeStyle() {
 }
 
 function installGovernanceNavigation() {
+  const isGovernanceView = window.location.pathname.endsWith("/governance.html");
   const primaryNavigation = document.querySelector(".nav-list");
-  if (primaryNavigation && !primaryNavigation.querySelector('a[href="/governance.html"]')) {
+  if (!isGovernanceView && primaryNavigation && !primaryNavigation.querySelector('a[href="/governance.html"]')) {
     const link = document.createElement("a");
     link.className = "nav-item";
     link.href = "/governance.html";
@@ -21,7 +22,6 @@ function installGovernanceNavigation() {
     primaryNavigation.append(link);
   }
 
-  const isGovernanceView = window.location.pathname.endsWith("/governance.html");
   const heroMeta = document.querySelector(".hero-meta");
   if (!isGovernanceView && heroMeta && !heroMeta.querySelector('a[href="/governance.html"]')) {
     const link = document.createElement("a");
