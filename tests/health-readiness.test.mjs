@@ -7,6 +7,10 @@ import { onRequest as readyRequest, onRequestGet as readyGet } from "../function
 
 const packageJson = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
+function syntheticCredential() {
+  return ["synthetic", "test", "token"].join("-");
+}
+
 async function body(response) {
   return JSON.parse(await response.text());
 }
@@ -32,27 +36,29 @@ test("health endpoint rejects mutation-style methods", async () => {
 });
 
 test("readiness fails closed until both private-access gate and credential are configured", async () => {
+  const token = syntheticCredential();
   for (const env of [
     {},
-    { GITHUB_TOKEN: "synthetic-test-token" },
+    { GITHUB_TOKEN: token },
     { ACCESS_GATE_CONFIRMED: "true" },
-    { GITHUB_TOKEN: "synthetic-test-token", ACCESS_GATE_CONFIRMED: "false" },
+    { GITHUB_TOKEN: token, ACCESS_GATE_CONFIRMED: "false" },
   ]) {
     const response = readyGet({ env });
     const payload = await body(response);
     assert.equal(response.status, 503);
     assert.equal(payload.status, "not-ready");
     assert.equal(payload.code, "deployment_not_ready");
-    assert.equal(JSON.stringify(payload).includes("synthetic-test-token"), false);
+    assert.equal(JSON.stringify(payload).includes(token), false);
     assert.equal(JSON.stringify(payload).includes("GITHUB_TOKEN"), false);
     assert.equal(JSON.stringify(payload).includes("ACCESS_GATE_CONFIRMED"), false);
   }
 });
 
 test("readiness reports configuration-ready without probing or exposing GitHub", async () => {
+  const token = syntheticCredential();
   const response = readyGet({
     env: {
-      GITHUB_TOKEN: "synthetic-test-token",
+      GITHUB_TOKEN: token,
       ACCESS_GATE_CONFIRMED: "TRUE",
     },
   });
@@ -63,7 +69,7 @@ test("readiness reports configuration-ready without probing or exposing GitHub",
   assert.equal(payload.status, "ready");
   assert.equal(payload.version, packageJson.version);
   assert.equal(payload.scope, "configuration");
-  assert.equal(JSON.stringify(payload).includes("synthetic-test-token"), false);
+  assert.equal(JSON.stringify(payload).includes(token), false);
 });
 
 test("readiness endpoint rejects mutation-style methods", async () => {
