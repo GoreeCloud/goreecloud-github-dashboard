@@ -16,6 +16,10 @@ Activity ranking and Repository Attention help surface repositories with current
 
 Coverage metadata distinguishes successful probes, confirmed optional absence, and unavailable evidence. This reduces the risk that a partial GitHub response is presented as complete operational knowledge.
 
+### Open-source transparency without exposing private operations
+
+The source repository can remain publicly inspectable and reusable while the live operational data plane stays behind authenticated private access. Repository-local public-source validation helps keep reusable credentials, private keys, exported private payloads, and direct browser-side GitHub authentication out of the open-source tree.
+
 ### Lower credential exposure risk
 
 The GitHub credential stays in the server-side function boundary, browser responses are normalized, mutation routes are absent, and deployment remains fail-closed until the private-access interlock is explicitly enabled after external authentication is verified.
@@ -30,8 +34,8 @@ Durable data surfaces, keyboard focus, contrast modes, reduced-motion handling, 
 
 ### Clear recovery and governance boundaries
 
-Repository history, deployment documentation, cache policy, platform-conformance status, and explicit production gates make it easier to understand what can be rebuilt or reviewed and what is still unverified.
+Repository history, deployment documentation, cache policy, public-source policy, platform-conformance status, and explicit production gates make it easier to understand what can be rebuilt or reviewed and what is still unverified.
 
 ## Benefits not yet claimed
 
-This document does not claim production-grade private access, GoreeCloud Identity authorization, Wardveil acceptance, Privacy Shield acceptance, Everkeep recovery, Mesh integration, current Glaze UI rendered acceptance, production uptime, or production deployment. Those benefits depend on work that remains incomplete or unverified.
+This document does not claim production-grade private access, hosted secret-scanning acceptance, branch/ruleset enforcement, signed release provenance, GoreeCloud Identity authorization, Wardveil acceptance, Privacy Shield acceptance, Everkeep recovery, Mesh integration, current Glaze UI rendered acceptance, production uptime, or production deployment. Those benefits depend on work that remains incomplete or unverified.
