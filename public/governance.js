@@ -10,6 +10,15 @@ const PROBE_LABELS = {
   codeowners: "CODEOWNERS",
 };
 
+const DOCUMENTATION_LABELS = {
+  readme: "README",
+  specifications: "SPECIFICATIONS",
+  features: "FEATURES",
+  benefits: "BENEFITS",
+  competitiveObjectives: "COMPETITIVE-OBJECTIVES",
+  branding: "BRANDING",
+};
+
 const byId = (id) => document.getElementById(id);
 
 function setText(id, value) {
@@ -78,13 +87,13 @@ function coverageLabel(status) {
   return "Partial";
 }
 
-function renderProbes(probes = []) {
-  const container = byId("probe-list");
+function renderProbeCards(containerId, countId, probes = [], labels = {}, emptyMessage = "No probes were returned.") {
+  const container = byId(containerId);
   clear(container);
-  setText("probe-count", probes.length);
+  setText(countId, probes.length);
 
   if (!probes.length) {
-    container.append(emptyState("No governance probes were returned."));
+    container?.append(emptyState(emptyMessage));
     return;
   }
 
@@ -96,7 +105,7 @@ function renderProbes(probes = []) {
     header.className = "list-card-header";
     const title = document.createElement("h3");
     title.className = "item-title";
-    title.textContent = probe.label || PROBE_LABELS[probe.key] || probe.key;
+    title.textContent = probe.label || labels[probe.key] || probe.key;
     const badge = createBadge(
       coverageLabel(probe.status),
       probe.status === "complete" ? "success" : "private",
@@ -114,7 +123,34 @@ function renderProbes(probes = []) {
     meta.textContent = `${probe.path || "Expected path unavailable"}${probe.unavailable ? ` · ${probe.unavailable} repository observations unavailable` : ""}`;
 
     card.append(header, description, meta);
-    container.append(card);
+    container?.append(card);
+  }
+}
+
+function renderProbes(probes = []) {
+  renderProbeCards(
+    "probe-list",
+    "probe-count",
+    probes,
+    PROBE_LABELS,
+    "No governance probes were returned.",
+  );
+}
+
+function renderDocumentation(documentation = {}) {
+  renderProbeCards(
+    "documentation-list",
+    "documentation-count",
+    documentation.probes || [],
+    DOCUMENTATION_LABELS,
+    "No documentation evidence was returned.",
+  );
+
+  const boundary = byId("documentation-boundary");
+  if (boundary) {
+    boundary.textContent = documentation.applicability === "repository-role-unclassified"
+      ? "Repository role/type applicability is not evaluated by this view. Presence or absence is evidence only."
+      : "Documentation applicability remains a separate governed decision.";
   }
 }
 
@@ -164,7 +200,7 @@ function renderClassicProtection(protection = {}) {
   meta.textContent = `Classic branch-protection rules are shown separately from active ruleset rules${protection.unavailableRepositories ? ` · ${protection.unavailableRepositories} repository observations unavailable` : ""}`;
 
   card.append(header, description, meta);
-  container.append(card);
+  container?.append(card);
 }
 
 function rulesetSourceLabels(sources = []) {
@@ -213,7 +249,7 @@ function renderRulesets(rulesets = {}) {
   meta.textContent = `Enabled active repository- and organization-level rules only · evaluate/disabled rulesets are outside this view${rulesets.unavailableRepositories ? ` · ${rulesets.unavailableRepositories} repository observations unavailable` : ""}`;
 
   card.append(header, description, meta);
-  container.append(card);
+  container?.append(card);
 }
 
 function renderRequiredWorkflows(rulesets = {}) {
@@ -226,7 +262,7 @@ function renderRequiredWorkflows(rulesets = {}) {
   );
 
   if (!rows.length) {
-    container.append(emptyState("No active workflow rule was observed. This is not a policy-failure classification."));
+    container?.append(emptyState("No active workflow rule was observed. This is not a policy-failure classification."));
     return;
   }
 
@@ -254,7 +290,7 @@ function renderRequiredWorkflows(rulesets = {}) {
     meta.textContent = "Required workflow evidence only · GoreeCloud policy satisfaction is not evaluated by this view.";
 
     card.append(header, description, meta);
-    container.append(card);
+    container?.append(card);
   }
 }
 
@@ -272,6 +308,15 @@ function rulesetTerms(ruleset = {}) {
       workflow.ref,
       workflow.sha,
     ]),
+  ];
+}
+
+function documentationTerms(documentation = {}) {
+  if (!documentation.available) return ["documentation unavailable"];
+  return [
+    documentation.status,
+    ...(documentation.presentChecks || []).map((key) => DOCUMENTATION_LABELS[key] || key),
+    ...(documentation.missingChecks || []).map((key) => `missing ${DOCUMENTATION_LABELS[key] || key}`),
   ];
 }
 
@@ -300,6 +345,7 @@ function renderRepositoryRows(repositories = [], rulesetByRepository = new Map()
       repository.visibility,
       repository.status,
       ...missingLabels,
+      ...documentationTerms(repository.documentation || {}),
       ...protectionTerms,
       ...rulesetTerms(ruleset),
     ]
@@ -310,11 +356,11 @@ function renderRepositoryRows(repositories = [], rulesetByRepository = new Map()
   if (!filtered.length) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = "empty-state";
     cell.textContent = normalizedQuery ? "No governance observations match this search." : "No repository observations were returned.";
     row.append(cell);
-    body.append(row);
+    body?.append(row);
     return;
   }
 
@@ -348,6 +394,29 @@ function renderRepositoryRows(repositories = [], rulesetByRepository = new Map()
       missingCell.append(createBadge("None observed", "success"));
     } else {
       missingCell.textContent = repository.missingChecks.map((key) => PROBE_LABELS[key] || key).join(" · ");
+    }
+
+    const documentationCell = document.createElement("td");
+    const documentation = repository.documentation || {};
+    if (!documentation.available) {
+      documentationCell.append(createBadge("Unavailable", "private"));
+      const detail = document.createElement("div");
+      detail.className = "repo-description";
+      detail.textContent = "Documentation observation unavailable";
+      documentationCell.append(detail);
+    } else {
+      const present = documentation.presentChecks?.length || 0;
+      const total = Object.keys(DOCUMENTATION_LABELS).length;
+      documentationCell.append(createBadge(
+        documentation.missingChecks?.length ? `${present} / ${total} observed` : "All observed",
+        documentation.missingChecks?.length ? "" : "success",
+      ));
+      const detail = document.createElement("div");
+      detail.className = "repo-description";
+      detail.textContent = documentation.missingChecks?.length
+        ? `Absent evidence: ${documentation.missingChecks.map((key) => DOCUMENTATION_LABELS[key] || key).join(" · ")}`
+        : "All six policy-defined application/service documentation paths are present";
+      documentationCell.append(detail);
     }
 
     const protectionCell = document.createElement("td");
@@ -414,11 +483,12 @@ function renderRepositoryRows(repositories = [], rulesetByRepository = new Map()
       visibilityCell,
       observedCell,
       missingCell,
+      documentationCell,
       protectionCell,
       rulesetCell,
       updatedCell,
     );
-    body.append(row);
+    body?.append(row);
   }
 }
 
@@ -430,6 +500,7 @@ function renderGovernance(data) {
   state.data = data;
   const summary = data.summary || {};
   const governance = data.governance || {};
+  const documentation = governance.documentation || {};
   const classicProtection = governance.classicBranchProtection || {};
   const rulesets = data.rulesets || {};
   const rulesetByRepository = rulesetObservationMap(rulesets);
@@ -437,6 +508,8 @@ function renderGovernance(data) {
   setText("stat-total", summary.totalRepositories ?? 0);
   setText("stat-observed", summary.repositoriesWithAllObservedFiles ?? 0);
   setText("stat-gaps", summary.repositoriesWithObservedGaps ?? 0);
+  setText("stat-documentation-complete", summary.repositoriesWithAllObservedDocumentation ?? 0);
+  setText("stat-documentation-gaps", summary.repositoriesWithObservedDocumentationGaps ?? 0);
   setText("stat-classic-protected", summary.classicProtectedRepositories ?? 0);
   setText("stat-rulesets-active", summary.repositoriesWithActiveRulesets ?? 0);
   setText("stat-required-workflows", summary.repositoriesWithRequiredWorkflowRules ?? 0);
@@ -453,17 +526,18 @@ function renderGovernance(data) {
   setPill("coverage-state", coverageText, overallStatus === "complete");
   setText(
     "sidebar-status",
-    `${summary.checkedRepositories ?? 0} file · ${summary.classicProtectionCheckedRepositories ?? 0} classic · ${summary.rulesetCheckedRepositories ?? 0} ruleset observations`,
+    `${summary.checkedRepositories ?? 0} baseline · ${summary.documentationCheckedRepositories ?? 0} docs · ${summary.classicProtectionCheckedRepositories ?? 0} classic · ${summary.rulesetCheckedRepositories ?? 0} ruleset observations`,
   );
 
   renderProbes(governance.probes || []);
+  renderDocumentation(documentation);
   renderClassicProtection(classicProtection);
   renderRulesets(rulesets);
   renderRequiredWorkflows(rulesets);
   renderRepositoryRows(
     governance.repositories || [],
     rulesetByRepository,
-    byId("governance-search").value,
+    byId("governance-search")?.value || "",
   );
 }
 

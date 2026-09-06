@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  DOCUMENTATION_PROBES,
   GOVERNANCE_PROBES,
   buildClassicBranchProtectionGraphqlQuery,
   buildGovernanceGraphqlQuery,
@@ -38,7 +39,10 @@ function completeNode(name, missing = []) {
   return {
     name,
     ...Object.fromEntries(
-      GOVERNANCE_PROBES.map((probe) => [probe.key, missing.includes(probe.key) ? null : { oid: `${name}-${probe.key}` }]),
+      [...GOVERNANCE_PROBES, ...DOCUMENTATION_PROBES].map((probe) => [
+        probe.key,
+        missing.includes(probe.key) ? null : { oid: `${name}-${probe.key}` },
+      ]),
     ),
   };
 }
@@ -81,7 +85,7 @@ function queryFromOptions(options = {}) {
   return JSON.parse(options.body || "{}").query || "";
 }
 
-test("governance GraphQL query binds exact default branches and governed paths", () => {
+test("governance GraphQL query binds exact default branches, baseline paths, and documentation paths", () => {
   const query = buildGovernanceGraphqlQuery(OWNER, [
     repository("alpha", { default_branch: "master" }),
     repository("beta", { default_branch: "release/v1" }),
@@ -92,7 +96,14 @@ test("governance GraphQL query binds exact default branches and governed paths",
   assert.match(query, /master:SECURITY\.md/);
   assert.match(query, /master:CONTRIBUTING\.md/);
   assert.match(query, /master:\.github\/CODEOWNERS/);
+  assert.match(query, /master:README\.md/);
+  assert.match(query, /master:SPECIFICATIONS\.md/);
+  assert.match(query, /master:FEATURES\.md/);
+  assert.match(query, /master:BENEFITS\.md/);
+  assert.match(query, /master:COMPETITIVE-OBJECTIVES\.md/);
+  assert.match(query, /master:BRANDING\.md/);
   assert.match(query, /release\/v1:goreecloud\.platform\.yaml/);
+  assert.match(query, /release\/v1:SPECIFICATIONS\.md/);
 });
 
 test("classic branch-protection GraphQL query asks GitHub which rules match each exact default branch", () => {
@@ -112,7 +123,7 @@ test("classic branch-protection GraphQL query asks GitHub which rules match each
   assert.match(query, /requiresStrictStatusChecks/);
 });
 
-test("governance coverage reports file presence and classic default-branch protection as separate observations", async () => {
+test("governance coverage reports baseline, documentation, and classic protection as distinct observations", async () => {
   const repositories = [repository("alpha"), repository("beta", { visibility: "public", private: false })];
   const originalFetch = globalThis.fetch;
   let requests = 0;
@@ -136,7 +147,7 @@ test("governance coverage reports file presence and classic default-branch prote
 
     return response({
       data: {
-        r0: completeNode("alpha", ["contributing"]),
+        r0: completeNode("alpha", ["contributing", "specifications"]),
         r1: completeNode("beta"),
       },
     });
@@ -164,6 +175,16 @@ test("governance coverage reports file presence and classic default-branch prote
     assert.equal(contributing.unavailable, 0);
     assert.equal(contributing.status, "complete");
 
+    assert.equal(coverage.documentation.status, "complete");
+    assert.equal(coverage.documentation.scope, "policy-defined-application-service-documentation-evidence");
+    assert.equal(coverage.documentation.applicability, "repository-role-unclassified");
+    assert.equal(coverage.documentation.checkedRepositories, 2);
+    assert.equal(coverage.documentation.repositoriesWithAllObservedFiles, 1);
+    assert.equal(coverage.documentation.repositoriesWithObservedGaps, 1);
+    const specifications = coverage.documentation.probes.find((probe) => probe.key === "specifications");
+    assert.equal(specifications.present, 1);
+    assert.equal(specifications.absent, 1);
+
     assert.deepEqual(coverage.classicBranchProtection, {
       status: "complete",
       checkedRepositories: 2,
@@ -177,6 +198,9 @@ test("governance coverage reports file presence and classic default-branch prote
     assert.equal(alpha.status, "gaps");
     assert.deepEqual(alpha.missingChecks, ["contributing"]);
     assert.equal(alpha.checksAvailable, true);
+    assert.equal(alpha.documentation.available, true);
+    assert.equal(alpha.documentation.status, "gaps");
+    assert.deepEqual(alpha.documentation.missingChecks, ["specifications"]);
     assert.equal(alpha.classicBranchProtection.available, true);
     assert.equal(alpha.classicBranchProtection.defaultBranchProtected, true);
     assert.equal(alpha.classicBranchProtection.matchingRules.length, 1);
@@ -190,6 +214,8 @@ test("governance coverage reports file presence and classic default-branch prote
     const beta = coverage.repositories.find((item) => item.name === "beta");
     assert.equal(beta.status, "observed");
     assert.deepEqual(beta.missingChecks, []);
+    assert.equal(beta.documentation.status, "observed");
+    assert.deepEqual(beta.documentation.missingChecks, []);
     assert.equal(beta.classicBranchProtection.available, true);
     assert.equal(beta.classicBranchProtection.defaultBranchProtected, false);
     assert.deepEqual(beta.classicBranchProtection.matchingRules, []);
@@ -198,7 +224,7 @@ test("governance coverage reports file presence and classic default-branch prote
   }
 });
 
-test("GraphQL errors remain unavailable instead of becoming false missing-file or branch-protection claims", async () => {
+test("GraphQL errors remain unavailable instead of becoming false missing-file or documentation claims", async () => {
   const repositories = [repository("alpha"), repository("beta")];
   const originalFetch = globalThis.fetch;
 
@@ -219,16 +245,23 @@ test("GraphQL errors remain unavailable instead of becoming false missing-file o
     assert.equal(coverage.checkedRepositories, 0);
     assert.equal(coverage.unavailableRepositories, 2);
     assert.equal(coverage.repositoriesWithObservedGaps, 0);
+    assert.equal(coverage.documentation.status, "unavailable");
+    assert.equal(coverage.documentation.checkedRepositories, 0);
+    assert.equal(coverage.documentation.repositoriesWithObservedGaps, 0);
     assert.equal(coverage.classicBranchProtection.status, "unavailable");
     assert.equal(coverage.classicBranchProtection.checkedRepositories, 0);
     assert.equal(coverage.classicBranchProtection.unprotectedRepositories, 0);
     assert.equal(coverage.classicBranchProtection.unavailableRepositories, 2);
     assert.ok(coverage.repositories.every((item) => item.status === "unavailable"));
     assert.ok(coverage.repositories.every((item) => item.missingChecks.length === 0));
+    assert.ok(coverage.repositories.every((item) => item.documentation.available === false));
+    assert.ok(coverage.repositories.every((item) => item.documentation.missingChecks.length === 0));
     assert.ok(coverage.repositories.every((item) => item.classicBranchProtection.available === false));
     assert.ok(coverage.repositories.every((item) => item.classicBranchProtection.defaultBranchProtected === null));
     assert.ok(coverage.probes.every((probe) => probe.status === "unavailable"));
     assert.ok(coverage.probes.every((probe) => probe.absent === 0));
+    assert.ok(coverage.documentation.probes.every((probe) => probe.status === "unavailable"));
+    assert.ok(coverage.documentation.probes.every((probe) => probe.absent === 0));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -249,6 +282,7 @@ test("incomplete branch-protection pagination stays unavailable instead of becom
   try {
     const coverage = await fetchGovernanceCoverage({ GITHUB_TOKEN: TOKEN }, OWNER, repositories);
     assert.equal(coverage.fileStatus, "complete");
+    assert.equal(coverage.documentation.status, "complete");
     assert.equal(coverage.classicBranchProtection.status, "unavailable");
     assert.equal(coverage.classicBranchProtection.unprotectedRepositories, 0);
     assert.equal(coverage.status, "partial");
@@ -299,12 +333,18 @@ test("governance observation batches are bounded and preserve independent succes
     assert.equal(coverage.repositoriesWithAllObservedFiles, 20);
     assert.equal(coverage.repositoriesWithObservedGaps, 0);
     assert.ok(coverage.probes.every((probe) => probe.status === "partial"));
+    assert.equal(coverage.documentation.status, "partial");
+    assert.equal(coverage.documentation.checkedRepositories, 20);
+    assert.equal(coverage.documentation.unavailableRepositories, 1);
+    assert.equal(coverage.documentation.repositoriesWithAllObservedFiles, 20);
+    assert.ok(coverage.documentation.probes.every((probe) => probe.status === "partial"));
     assert.equal(coverage.classicBranchProtection.status, "complete");
     assert.equal(coverage.classicBranchProtection.checkedRepositories, 21);
     assert.equal(coverage.classicBranchProtection.protectedRepositories, 21);
 
     const repo21 = coverage.repositories.find((item) => item.name === "repo-21");
     assert.equal(repo21.status, "unavailable");
+    assert.equal(repo21.documentation.available, false);
     assert.equal(repo21.classicBranchProtection.available, true);
     assert.equal(repo21.classicBranchProtection.defaultBranchProtected, true);
   } finally {

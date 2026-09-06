@@ -7,6 +7,20 @@ export const GOVERNANCE_PROBES = Object.freeze([
   Object.freeze({ key: "codeowners", label: "CODEOWNERS", path: ".github/CODEOWNERS" }),
 ]);
 
+export const DOCUMENTATION_PROBES = Object.freeze([
+  Object.freeze({ key: "readme", label: "README", path: "README.md" }),
+  Object.freeze({ key: "specifications", label: "SPECIFICATIONS", path: "SPECIFICATIONS.md" }),
+  Object.freeze({ key: "features", label: "FEATURES", path: "FEATURES.md" }),
+  Object.freeze({ key: "benefits", label: "BENEFITS", path: "BENEFITS.md" }),
+  Object.freeze({
+    key: "competitiveObjectives",
+    label: "COMPETITIVE-OBJECTIVES",
+    path: "COMPETITIVE-OBJECTIVES.md",
+  }),
+  Object.freeze({ key: "branding", label: "BRANDING", path: "BRANDING.md" }),
+]);
+
+const ALL_FILE_PROBES = Object.freeze([...GOVERNANCE_PROBES, ...DOCUMENTATION_PROBES]);
 const DEFAULT_BATCH_SIZE = 20;
 const MAX_BATCH_SIZE = 25;
 const MAX_BRANCH_PROTECTION_RULES = 100;
@@ -42,7 +56,7 @@ function combinedCoverageStatus(...statuses) {
 
 export function buildGovernanceGraphqlQuery(owner, repositories) {
   const fields = repositories.map((repository, index) => {
-    const probes = GOVERNANCE_PROBES.map((probe) => (
+    const probes = ALL_FILE_PROBES.map((probe) => (
       `${probe.key}: object(expression: ${quoted(repositoryExpression(repository, probe.path))}) { oid }`
     )).join("\n      ");
 
@@ -150,6 +164,24 @@ function normalizeClassicProtectionNode(repository, node) {
   };
 }
 
+function probeSummary(rows, probes, selector, checkedRepositories, unavailableRepositories, status) {
+  return probes.map((probe) => {
+    const present = rows.filter((row) => (
+      selector(row)?.available === true && selector(row).presentChecks.includes(probe.key)
+    )).length;
+    return {
+      key: probe.key,
+      label: probe.label,
+      path: probe.path,
+      checked: checkedRepositories,
+      present,
+      absent: Math.max(0, checkedRepositories - present),
+      unavailable: unavailableRepositories,
+      status,
+    };
+  });
+}
+
 export function buildGovernanceCoverage(repositories, observations = [], protectionObservations = []) {
   const observationByRepository = new Map(observations.map((observation) => [observation.repository, observation]));
   const protectionByRepository = new Map(
@@ -167,6 +199,12 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
     const missingChecks = available
       ? GOVERNANCE_PROBES.filter((probe) => presence[probe.key] !== true).map((probe) => probe.key)
       : [];
+    const documentationPresentChecks = available
+      ? DOCUMENTATION_PROBES.filter((probe) => presence[probe.key] === true).map((probe) => probe.key)
+      : [];
+    const documentationMissingChecks = available
+      ? DOCUMENTATION_PROBES.filter((probe) => presence[probe.key] !== true).map((probe) => probe.key)
+      : [];
 
     const protection = protectionByRepository.get(repository.name);
     const protectionAvailable = protection?.available === true;
@@ -177,6 +215,12 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
       checksAvailable: available,
       presentChecks,
       missingChecks,
+      documentation: {
+        available,
+        status: available ? (documentationMissingChecks.length ? "gaps" : "observed") : "unavailable",
+        presentChecks: documentationPresentChecks,
+        missingChecks: documentationMissingChecks,
+      },
       classicBranchProtection: {
         available: protectionAvailable,
         defaultBranchProtected: protectionAvailable ? protection.defaultBranchProtected === true : null,
@@ -190,25 +234,42 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
     const bUnavailable = Number(!b.checksAvailable) + Number(!b.classicBranchProtection.available);
     if (bUnavailable !== aUnavailable) return bUnavailable - aUnavailable;
     if (b.missingChecks.length !== a.missingChecks.length) return b.missingChecks.length - a.missingChecks.length;
+    if (b.documentation.missingChecks.length !== a.documentation.missingChecks.length) {
+      return b.documentation.missingChecks.length - a.documentation.missingChecks.length;
+    }
     return a.name.localeCompare(b.name);
   });
 
   const checkedRepositories = rows.filter((row) => row.checksAvailable).length;
   const unavailableRepositories = rows.length - checkedRepositories;
   const fileStatus = coverageStatus(rows.length, checkedRepositories, unavailableRepositories);
-  const probes = GOVERNANCE_PROBES.map((probe) => {
-    const present = rows.filter((row) => row.checksAvailable && row.presentChecks.includes(probe.key)).length;
-    return {
-      key: probe.key,
-      label: probe.label,
-      path: probe.path,
-      checked: checkedRepositories,
-      present,
-      absent: Math.max(0, checkedRepositories - present),
-      unavailable: unavailableRepositories,
-      status: fileStatus,
-    };
-  });
+  const probes = probeSummary(
+    rows,
+    GOVERNANCE_PROBES,
+    (row) => ({
+      available: row.checksAvailable,
+      presentChecks: row.presentChecks,
+    }),
+    checkedRepositories,
+    unavailableRepositories,
+    fileStatus,
+  );
+
+  const documentationCheckedRepositories = rows.filter((row) => row.documentation.available).length;
+  const documentationUnavailableRepositories = rows.length - documentationCheckedRepositories;
+  const documentationStatus = coverageStatus(
+    rows.length,
+    documentationCheckedRepositories,
+    documentationUnavailableRepositories,
+  );
+  const documentationProbes = probeSummary(
+    rows,
+    DOCUMENTATION_PROBES,
+    (row) => row.documentation,
+    documentationCheckedRepositories,
+    documentationUnavailableRepositories,
+    documentationStatus,
+  );
 
   const protectionCheckedRepositories = rows.filter((row) => row.classicBranchProtection.available).length;
   const protectionUnavailableRepositories = rows.length - protectionCheckedRepositories;
@@ -226,7 +287,7 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
   );
 
   return {
-    status: combinedCoverageStatus(fileStatus, protectionStatus),
+    status: combinedCoverageStatus(fileStatus, documentationStatus, protectionStatus),
     fileStatus,
     totalRepositories: rows.length,
     checkedRepositories,
@@ -234,6 +295,16 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
     repositoriesWithAllObservedFiles: rows.filter((row) => row.status === "observed").length,
     repositoriesWithObservedGaps: rows.filter((row) => row.status === "gaps").length,
     probes,
+    documentation: {
+      status: documentationStatus,
+      scope: "policy-defined-application-service-documentation-evidence",
+      applicability: "repository-role-unclassified",
+      checkedRepositories: documentationCheckedRepositories,
+      unavailableRepositories: documentationUnavailableRepositories,
+      repositoriesWithAllObservedFiles: rows.filter((row) => row.documentation.status === "observed").length,
+      repositoriesWithObservedGaps: rows.filter((row) => row.documentation.status === "gaps").length,
+      probes: documentationProbes,
+    },
     classicBranchProtection: {
       status: protectionStatus,
       checkedRepositories: protectionCheckedRepositories,
@@ -268,7 +339,7 @@ async function fetchGovernanceBatch(env, owner, repositories) {
       repository: repository.name,
       available: true,
       presence: Object.fromEntries(
-        GOVERNANCE_PROBES.map((probe) => [probe.key, Boolean(node[probe.key]?.oid)]),
+        ALL_FILE_PROBES.map((probe) => [probe.key, Boolean(node[probe.key]?.oid)]),
       ),
     };
   });

@@ -7,24 +7,25 @@
 - Surface: `/governance.html`
 - API: `/api/governance`
 - Mode: read-only
-- Observation model: baseline files + classic branch protection + active ruleset rules + required-workflow references
+- Observation model: baseline files + policy-defined documentation evidence + classic branch protection + active ruleset rules + required-workflow references
 - Production acceptance: not established
 
 ## Purpose
 
 The governance control-plane view provides a compact observation of repository-governance evidence across repositories accessible to the configured GoreeCloud GitHub credential.
 
-The current Development slice observes three independent source channels:
+The current Development slice observes four independent source channels:
 
 1. exact default-branch presence of four baseline files;
-2. classic GitHub branch-protection rules that GitHub reports as matching the exact default branch; and
-3. active GitHub ruleset rules that GitHub reports as applying to the exact default branch, including bounded required-workflow references when an active workflow rule is returned.
+2. exact default-branch presence of six policy-defined application/service documentation paths;
+3. classic GitHub branch-protection rules that GitHub reports as matching the exact default branch; and
+4. active GitHub ruleset rules that GitHub reports as applying to the exact default branch, including bounded required-workflow references when an active workflow rule is returned.
 
 This remains an observation surface, not a compliance engine. Presence, absence, matching rules, returned ruleset rules, or required-workflow references do not by themselves establish policy correctness, applicability, release eligibility, platform conformance, security acceptance, or Stable qualification.
 
 ## Baseline-file observation
 
-The currently observed default-branch paths are:
+The baseline default-branch paths are:
 
 - `goreecloud.platform.yaml`
 - `SECURITY.md`
@@ -34,6 +35,25 @@ The currently observed default-branch paths are:
 File presence uses the GitHub GraphQL API in batches of at most 20 repositories by default, with a hard internal maximum of 25. Each path is bound to the repository's reported default branch.
 
 A successful observation can report a file as present or absent. A failed GraphQL batch, GraphQL error, or missing repository node remains unavailable evidence and is not converted into a missing-file claim.
+
+## Documentation evidence observation
+
+The current Repository Control policy defines these six root Markdown records as mandatory for GoreeCloud application and service repositories:
+
+- `README.md`
+- `SPECIFICATIONS.md`
+- `FEATURES.md`
+- `BENEFITS.md`
+- `COMPETITIVE-OBJECTIVES.md`
+- `BRANDING.md`
+
+The dashboard observes those paths on the exact default branch using the same GraphQL repository batch as the four baseline paths. This adds no GitHub endpoint, permission, or repository fan-out.
+
+The evidence is deliberately normalized into its own `documentation` channel. It does not alter the historical four-file baseline result.
+
+Repository role/type applicability is not yet available as an authoritative machine-readable input to this application. Therefore the dashboard does not conclude that every accessible GoreeCloud repository must contain these six files. It reports only present, absent, or unavailable evidence and exposes the explicit applicability marker `repository-role-unclassified`.
+
+`Docs complete` means only that all six paths were present for the observed repository. `Docs gaps` means only that at least one path was absent from the successfully observed default branch. Neither label is a policy-satisfaction or failure result until repository role/type and applicability are separately governed.
 
 ## Classic default-branch protection
 
@@ -56,7 +76,7 @@ The rule list is bounded to 100 and matching refs to 10 per rule. If GitHub repo
 
 ## Active ruleset observation
 
-Rulesets are a third evidence channel and are intentionally independent from classic branch protection.
+Rulesets are another evidence channel and are intentionally independent from classic branch protection.
 
 For each repository, the server requests GitHub's `GET /repos/{owner}/{repo}/rules/branches/{branch}` endpoint for the exact default branch. The request is pinned locally to GitHub REST API version `2026-03-10` while the dashboard's general GitHub client remains on its existing default API version.
 
@@ -98,9 +118,9 @@ Those are separate policy, source-validation, and runtime-evidence questions.
 
 ## Independent fail-soft channels
 
-Baseline files, classic protection, and rulesets are intentionally independent.
+Baseline/documentation file observation, classic protection, and rulesets are intentionally independent channels. Baseline and documentation evidence share one GitHub GraphQL request channel, but they are normalized separately after a successful response.
 
-Failure of one channel does not erase successful evidence from the others. The aggregate page status is:
+Failure of one upstream channel does not erase successful evidence from the others. The aggregate page status is:
 
 - `complete` only when all active channels are complete;
 - `unavailable` only when all active channels are unavailable; and
@@ -114,10 +134,12 @@ Per-channel unavailable evidence is never converted into absence.
 
 The following distinctions are mandatory:
 
+- `Baseline gaps` means only that one or more of the four baseline paths were absent in a successfully observed default branch.
+- `Docs gaps` means only that one or more of the six policy-defined application/service documentation paths were absent; repository role/type applicability is not evaluated by this view.
 - `No matching classic rule` means only that the classic-rule observation completed and no classic rule matched the exact default branch.
 - `No active rules` means only that the active-rules endpoint returned an empty set for the exact default branch.
 - `Workflow rule observed` means only that an active ruleset returned a rule of type `workflows`; it is not a policy-satisfaction result.
-- An unavailable ruleset observation means the dashboard could not safely classify that repository's active ruleset or required-workflow-reference state.
+- An unavailable observation means the dashboard could not safely classify that evidence channel.
 - None of these labels is a repository compliance classification.
 
 Classic rules and active rulesets can coexist. A repository can have no matching classic rule while still receiving protection from active rulesets.
@@ -149,19 +171,19 @@ The current slice still does not determine:
 - repository role/type;
 - whether Platform Contract v0.2 applies to a particular repository;
 - manifest validity or computed conformance for peer repositories;
+- whether documentation-path absence is policy-relevant for a particular repository role/type;
 - which observed workflow references are required by GoreeCloud policy for a repository role/type;
 - whether an observed required workflow reference points to an approved governed workflow revision;
 - whether required workflows executed successfully for a particular pull request or push;
 - dependency/security automation coverage;
 - hosted secret-scanning acceptance;
 - release eligibility;
-- documentation completeness beyond the four observed paths;
 - current Glaze UI target in peer repositories;
 - Identity, Mesh, Wardveil Security, Privacy Shield, Everkeep, or Manager integration state in peer repositories; or
 - branch/ruleset mutation or enforcement.
 
 ## Acceptance boundary
 
-Automated source tests validate bounded batching/concurrency, exact default-branch targeting, file-presence normalization, classic matching-ref behavior, active-ruleset source/type normalization, bounded required-workflow reference normalization, local repository-id resolution, unavailable-evidence handling, channel independence, credential non-disclosure, no-store responses, page structure, bootstrap order, and conservative terminology.
+Automated source tests validate bounded batching/concurrency, exact default-branch targeting, baseline and documentation file-presence normalization, repository-role applicability disclaimers, classic matching-ref behavior, active-ruleset source/type normalization, bounded required-workflow reference normalization, local repository-id resolution, unavailable-evidence handling, channel independence, credential non-disclosure, no-store responses, page structure, bootstrap order, and conservative terminology.
 
 These tests do not replace representative live private-repository validation, rendered form-factor review, accessibility acceptance, Cloudflare Pages deployment validation, authenticated private-access verification, production monitoring, rollback/recovery validation, or explicit production approval.

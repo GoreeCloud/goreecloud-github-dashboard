@@ -33,6 +33,25 @@ function graphqlQuery(options = {}) {
   return JSON.parse(options.body || "{}").query || "";
 }
 
+function governanceNode({ missing = [] } = {}) {
+  const keys = [
+    "platformContract",
+    "security",
+    "contributing",
+    "codeowners",
+    "readme",
+    "specifications",
+    "features",
+    "benefits",
+    "competitiveObjectives",
+    "branding",
+  ];
+  return {
+    name: "governance-fixture",
+    ...Object.fromEntries(keys.map((key) => [key, missing.includes(key) ? null : { oid: key }])),
+  };
+}
+
 test("governance API fails closed when GitHub credentials are missing", async () => {
   const response = await onRequestGet({ env: { GITHUB_OWNER: OWNER, ACCESS_GATE_CONFIRMED: "true" } });
   const payload = await response.json();
@@ -53,7 +72,7 @@ test("governance API fails closed when the external access gate is unconfirmed",
   assert.doesNotMatch(JSON.stringify(payload), new RegExp(TOKEN));
 });
 
-test("governance API returns normalized files, classic protection, active rulesets, and workflow references without credential leakage", async () => {
+test("governance API returns normalized baseline, documentation, classic protection, rulesets, and workflow references without credential leakage", async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];
   const rulesetApiVersions = [];
@@ -139,13 +158,7 @@ test("governance API returns normalized files, classic protection, active rulese
 
       return jsonResponse({
         data: {
-          r0: {
-            name: "governance-fixture",
-            platformContract: { oid: "platform" },
-            security: { oid: "security" },
-            contributing: null,
-            codeowners: { oid: "codeowners" },
-          },
+          r0: governanceNode({ missing: ["contributing", "specifications"] }),
         },
       });
     }
@@ -163,11 +176,14 @@ test("governance API returns normalized files, classic protection, active rulese
     assert.equal(response.status, 200);
     assert.equal(payload.owner, OWNER);
     assert.equal(payload.mode, "read-only");
-    assert.equal(payload.observationModel, "baseline-files-classic-protection-active-rulesets");
+    assert.equal(payload.observationModel, "baseline-files-documentation-evidence-classic-protection-active-rulesets");
     assert.equal(payload.observationStatus, "complete");
     assert.equal(payload.summary.totalRepositories, 1);
     assert.equal(payload.summary.checkedRepositories, 1);
     assert.equal(payload.summary.repositoriesWithObservedGaps, 1);
+    assert.equal(payload.summary.documentationCheckedRepositories, 1);
+    assert.equal(payload.summary.repositoriesWithAllObservedDocumentation, 0);
+    assert.equal(payload.summary.repositoriesWithObservedDocumentationGaps, 1);
     assert.equal(payload.summary.classicProtectionCheckedRepositories, 1);
     assert.equal(payload.summary.classicProtectedRepositories, 1);
     assert.equal(payload.summary.rulesetCheckedRepositories, 1);
@@ -177,6 +193,9 @@ test("governance API returns normalized files, classic protection, active rulese
     assert.equal(payload.summary.observedRequiredWorkflowReferences, 1);
     assert.equal(payload.governance.repositories[0].status, "gaps");
     assert.deepEqual(payload.governance.repositories[0].missingChecks, ["contributing"]);
+    assert.equal(payload.governance.documentation.applicability, "repository-role-unclassified");
+    assert.equal(payload.governance.repositories[0].documentation.status, "gaps");
+    assert.deepEqual(payload.governance.repositories[0].documentation.missingChecks, ["specifications"]);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.defaultBranchProtected, true);
     assert.equal(payload.rulesets.workflowObservationModel, "active-ruleset-required-workflow-references");
     assert.equal(payload.rulesets.repositories[0].hasRequiredWorkflowRule, true);
@@ -197,7 +216,7 @@ test("governance API returns normalized files, classic protection, active rulese
   }
 });
 
-test("ruleset observation can fail soft while file and classic evidence remain usable", async () => {
+test("ruleset observation can fail soft while file, documentation, and classic evidence remain usable", async () => {
   const originalFetch = globalThis.fetch;
 
   globalThis.fetch = async (input, options = {}) => {
@@ -216,17 +235,7 @@ test("ruleset observation can fail soft while file and classic evidence remain u
           },
         });
       }
-      return jsonResponse({
-        data: {
-          r0: {
-            name: "governance-fixture",
-            platformContract: { oid: "platform" },
-            security: { oid: "security" },
-            contributing: { oid: "contributing" },
-            codeowners: { oid: "codeowners" },
-          },
-        },
-      });
+      return jsonResponse({ data: { r0: governanceNode() } });
     }
     throw new Error(`Unhandled endpoint: ${url.pathname}`);
   };
@@ -240,10 +249,12 @@ test("ruleset observation can fail soft while file and classic evidence remain u
     assert.equal(response.status, 200);
     assert.equal(payload.observationStatus, "partial");
     assert.equal(payload.governance.status, "complete");
+    assert.equal(payload.governance.documentation.status, "complete");
     assert.equal(payload.rulesets.status, "unavailable");
     assert.equal(payload.summary.rulesetUnavailableRepositories, 1);
     assert.equal(payload.summary.repositoriesWithRequiredWorkflowRules, 0);
     assert.equal(payload.governance.repositories[0].checksAvailable, true);
+    assert.equal(payload.governance.repositories[0].documentation.available, true);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
   } finally {
     globalThis.fetch = originalFetch;

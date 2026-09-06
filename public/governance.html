@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0f6f6a" />
     <meta
       name="description"
-      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, classic default-branch protection, active rulesets, and required-workflow references."
+      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, policy-defined documentation evidence, classic default-branch protection, active rulesets, and required-workflow references."
     />
     <title>GoreeCloud GitHub Governance</title>
     <link rel="stylesheet" href="/styles.css" />
@@ -27,6 +27,7 @@
           <a class="nav-item" href="/">Dashboard</a>
           <a class="nav-item is-active" href="#summary" aria-current="page">Governance</a>
           <a class="nav-item" href="#baseline-files">Baseline files</a>
+          <a class="nav-item" href="#documentation">Documentation</a>
           <a class="nav-item" href="#classic-protection">Classic protection</a>
           <a class="nav-item" href="#rulesets">Rulesets</a>
           <a class="nav-item" href="#required-workflows">Required workflows</a>
@@ -54,9 +55,9 @@
         <section id="summary" class="hero panel panel-glaze" aria-labelledby="governance-title">
           <div class="hero-copy">
             <span class="hero-kicker">Read-only observation</span>
-            <h2 id="governance-title">See baseline files, branch protections, active rulesets, and required-workflow references across the portfolio.</h2>
+            <h2 id="governance-title">See baseline files, documentation evidence, branch protections, active rulesets, and required-workflow references across the portfolio.</h2>
             <p>
-              These signals are repository-state evidence, not proof of policy compliance. Required-workflow references are shown when an active ruleset contains a workflow rule; whether those workflows satisfy GoreeCloud policy remains a separate governed decision.
+              These signals are repository-state evidence, not proof of policy compliance. The six documentation paths are policy-defined for GoreeCloud applications and services, but repository role/type applicability is not yet classified here. Required-workflow references are likewise evidence only until separate policy interpretation is available.
             </p>
           </div>
           <div class="hero-meta">
@@ -75,14 +76,24 @@
             <span class="stat-caption">Accessible owned repositories</span>
           </article>
           <article class="stat-card panel">
-            <span class="stat-label">Observed files</span>
+            <span class="stat-label">Baseline complete</span>
             <strong class="stat-value" id="stat-observed">—</strong>
             <span class="stat-caption">All four baseline files present</span>
           </article>
           <article class="stat-card panel">
-            <span class="stat-label">Observed gaps</span>
+            <span class="stat-label">Baseline gaps</span>
             <strong class="stat-value" id="stat-gaps">—</strong>
             <span class="stat-caption">One or more baseline files absent</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs complete</span>
+            <strong class="stat-value" id="stat-documentation-complete">—</strong>
+            <span class="stat-caption">All six documentation paths present</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs gaps</span>
+            <strong class="stat-value" id="stat-documentation-gaps">—</strong>
+            <span class="stat-caption">Observed absence; applicability not classified</span>
           </article>
           <article class="stat-card panel">
             <span class="stat-label">Classic protected</span>
@@ -102,7 +113,7 @@
           <article class="stat-card panel">
             <span class="stat-label">File unavailable</span>
             <strong class="stat-value" id="stat-unavailable">—</strong>
-            <span class="stat-caption">Baseline-file evidence unavailable</span>
+            <span class="stat-caption">GraphQL file evidence unavailable</span>
           </article>
         </section>
 
@@ -117,7 +128,23 @@
             <span class="section-count" id="probe-count">0</span>
           </div>
           <div id="probe-list" class="content-grid" aria-live="polite">
-            <div class="empty-state">Refresh to inspect governance file presence.</div>
+            <div class="empty-state">Refresh to inspect baseline file presence.</div>
+          </div>
+        </section>
+
+        <section id="documentation" class="panel section-panel repository-section" aria-labelledby="documentation-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Policy-defined file evidence</p>
+              <h2 id="documentation-heading">Application/service documentation observation</h2>
+            </div>
+            <span class="section-count" id="documentation-count">0</span>
+          </div>
+          <p id="documentation-boundary" class="item-meta">
+            Repository role/type applicability is not evaluated by this view. Presence or absence is evidence only.
+          </p>
+          <div id="documentation-list" class="content-grid" aria-live="polite">
+            <div class="empty-state">Refresh to inspect repository documentation evidence.</div>
           </div>
         </section>
 
@@ -168,7 +195,7 @@
             </div>
             <label class="search-field">
               <span class="sr-only">Search governance observations</span>
-              <input id="governance-search" type="search" placeholder="Search repositories, gaps, protection, rulesets, or workflows" autocomplete="off" />
+              <input id="governance-search" type="search" placeholder="Search repositories, files, protection, rulesets, or workflows" autocomplete="off" />
             </label>
           </div>
           <div class="table-wrap">
@@ -177,8 +204,9 @@
                 <tr>
                   <th scope="col">Repository</th>
                   <th scope="col">Visibility</th>
-                  <th scope="col">Observed files</th>
-                  <th scope="col">Absent observed files</th>
+                  <th scope="col">Baseline files</th>
+                  <th scope="col">Absent baseline files</th>
+                  <th scope="col">Documentation evidence</th>
                   <th scope="col">Classic branch protection</th>
                   <th scope="col">Active rulesets</th>
                   <th scope="col">Updated</th>
@@ -186,7 +214,7 @@
               </thead>
               <tbody id="governance-table-body">
                 <tr>
-                  <td colspan="7" class="empty-state">Refresh to load governance observations.</td>
+                  <td colspan="8" class="empty-state">Refresh to load governance observations.</td>
                 </tr>
               </tbody>
             </table>
@@ -201,8 +229,8 @@
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
         <a href="/">Dashboard</a>
+        <a href="#documentation">Docs</a>
         <a href="#rulesets">Rulesets</a>
-        <a href="#required-workflows">Workflows</a>
         <a href="#repositories">Repos</a>
       </nav>
     </div>

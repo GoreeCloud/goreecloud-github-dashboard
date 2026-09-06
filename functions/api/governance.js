@@ -49,6 +49,7 @@ export async function onRequestGet(context) {
       fetchGovernanceCoverage(env, owner, repositories),
       fetchRulesetCoverage(env, owner, repositories),
     ]);
+    const documentation = governance.documentation || {};
     const classicProtection = governance.classicBranchProtection || {};
     const observationStatus = combinedObservationStatus(governance.status, rulesets.status);
 
@@ -56,7 +57,7 @@ export async function onRequestGet(context) {
       generatedAt: new Date().toISOString(),
       owner,
       mode: "read-only",
-      observationModel: "baseline-files-classic-protection-active-rulesets",
+      observationModel: "baseline-files-documentation-evidence-classic-protection-active-rulesets",
       observationStatus,
       summary: {
         totalRepositories: governance.totalRepositories,
@@ -64,6 +65,10 @@ export async function onRequestGet(context) {
         unavailableRepositories: governance.unavailableRepositories,
         repositoriesWithAllObservedFiles: governance.repositoriesWithAllObservedFiles,
         repositoriesWithObservedGaps: governance.repositoriesWithObservedGaps,
+        documentationCheckedRepositories: documentation.checkedRepositories || 0,
+        documentationUnavailableRepositories: documentation.unavailableRepositories || 0,
+        repositoriesWithAllObservedDocumentation: documentation.repositoriesWithAllObservedFiles || 0,
+        repositoriesWithObservedDocumentationGaps: documentation.repositoriesWithObservedGaps || 0,
         classicProtectionCheckedRepositories: classicProtection.checkedRepositories || 0,
         classicProtectedRepositories: classicProtection.protectedRepositories || 0,
         classicUnprotectedRepositories: classicProtection.unprotectedRepositories || 0,
