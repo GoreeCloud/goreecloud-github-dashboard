@@ -17,8 +17,13 @@ function jsonResponse(payload = {}) {
   };
 }
 
+function syntheticCredential() {
+  return ["synthetic", "test", "token"].join("-");
+}
+
 test("GitHub requests identify the current dashboard package version", async () => {
   const originalFetch = globalThis.fetch;
+  const token = syntheticCredential();
   let capturedUrl = null;
   let capturedOptions = null;
 
@@ -29,14 +34,14 @@ test("GitHub requests identify the current dashboard package version", async () 
   };
 
   try {
-    await githubRequest({ GITHUB_TOKEN: "synthetic-test-token" }, "/rate_limit");
+    await githubRequest({ GITHUB_TOKEN: token }, "/rate_limit");
   } finally {
     globalThis.fetch = originalFetch;
   }
 
   assert.equal(capturedUrl, "https://api.github.com/rate_limit");
   assert.equal(capturedOptions.headers.Accept, "application/vnd.github+json");
-  assert.equal(capturedOptions.headers.Authorization, "Bearer synthetic-test-token");
+  assert.equal(capturedOptions.headers.Authorization, `Bearer ${token}`);
   assert.equal(
     capturedOptions.headers["User-Agent"],
     `GoreeCloud-GitHub-Dashboard/${packageMetadata.version}`,
