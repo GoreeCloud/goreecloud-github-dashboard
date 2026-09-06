@@ -120,6 +120,13 @@ if (!failures.length) {
     "MAX_RULESET_CONCURRENCY = 8",
     'scope: "active-default-branch-rulesets"',
     "Promise.allSettled",
+    'type === "workflows"',
+    "normalizeRequiredWorkflow",
+    "repositoryId",
+    "requiredWorkflows",
+    "repositoriesWithRequiredWorkflowRules",
+    "observedRequiredWorkflowReferences",
+    'workflowObservationModel: "active-ruleset-required-workflow-references"',
   ]) {
     if (!rulesetsSource.includes(marker)) failures.push(`Governance ruleset source missing invariant: ${marker}`);
   }
@@ -129,20 +136,28 @@ if (!failures.length) {
   if (!governancePage.includes('id="rulesets"') || !governancePage.includes('id="stat-rulesets-active"')) {
     failures.push("Governance page must expose the active default-branch ruleset surface.");
   }
+  if (!governancePage.includes('id="required-workflows"') || !governancePage.includes('id="stat-required-workflows"')) {
+    failures.push("Governance page must expose required-workflow reference observation.");
+  }
   for (const marker of [
     "Classic branch-protection rules are shown separately from active ruleset rules",
     "No enabled active ruleset rules returned for this default branch",
     "evaluate/disabled rulesets are outside this view",
+    "Workflow rule observed",
+    "GoreeCloud policy satisfaction is not evaluated by this view",
+    "not a policy-failure classification",
   ]) {
     if (!governanceRenderer.includes(marker)) failures.push(`Governance renderer missing evidence-boundary wording: ${marker}`);
   }
   for (const marker of [
     "## Active ruleset observation",
-    "Raw rule parameters are not forwarded to the browser",
+    "## Required-workflow reference observation",
+    "workflow file `path`",
+    "does not invent a name",
     "## Independent fail-soft channels",
     "None of these labels is a repository compliance classification",
   ]) {
-    if (!governanceDocs.includes(marker)) failures.push(`Governance documentation missing ruleset boundary: ${marker}`);
+    if (!governanceDocs.includes(marker)) failures.push(`Governance documentation missing ruleset/workflow boundary: ${marker}`);
   }
   if (/\b(?:non)?compliant\b/i.test(governanceRenderer)) {
     failures.push("Governance renderer must remain observational and must not classify repositories as compliant/noncompliant.");

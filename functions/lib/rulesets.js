@@ -8,6 +8,8 @@ const MAX_RULESET_CONCURRENCY = 8;
 const MAX_RULE_DETAILS = 40;
 const MAX_RULE_TYPES = 40;
 const MAX_RULESET_SOURCES = 40;
+const MAX_REQUIRED_WORKFLOW_REFERENCES = 40;
+const MAX_REQUIRED_WORKFLOWS_PER_RULE = 20;
 
 function coverageStatus(total, checked, unavailable) {
   if (total > 0 && checked === 0 && unavailable > 0) return "unavailable";
@@ -25,13 +27,38 @@ function safeString(value, limit = 160) {
   return typeof value === "string" ? value.slice(0, limit) : null;
 }
 
-export function normalizeRulesetRule(rule = {}) {
-  const rulesetId = Number(rule.ruleset_id);
+function finiteId(value) {
+  const numeric = Number(value);
+  return Number.isSafeInteger(numeric) && numeric > 0 ? numeric : null;
+}
+
+export function normalizeRequiredWorkflow(workflow = {}, repositoryNameById = new Map()) {
+  const repositoryId = finiteId(workflow.repository_id);
   return {
-    type: safeString(rule.type, 100) || "unknown",
+    path: safeString(workflow.path, 300),
+    repositoryId,
+    repository: repositoryId ? repositoryNameById.get(repositoryId) || null : null,
+    ref: safeString(workflow.ref, 200),
+    sha: safeString(workflow.sha, 80),
+  };
+}
+
+export function normalizeRulesetRule(rule = {}, repositoryNameById = new Map()) {
+  const rulesetId = Number(rule.ruleset_id);
+  const type = safeString(rule.type, 100) || "unknown";
+  const requiredWorkflows = type === "workflows" && Array.isArray(rule.parameters?.workflows)
+    ? rule.parameters.workflows
+      .slice(0, MAX_REQUIRED_WORKFLOWS_PER_RULE)
+      .map((workflow) => normalizeRequiredWorkflow(workflow, repositoryNameById))
+      .filter((workflow) => workflow.path && workflow.repositoryId)
+    : [];
+
+  return {
+    type,
     rulesetId: Number.isFinite(rulesetId) ? rulesetId : null,
     rulesetSourceType: safeString(rule.ruleset_source_type, 80),
     rulesetSource: safeString(rule.ruleset_source, 160),
+    requiredWorkflows,
   };
 }
 
@@ -39,39 +66,40 @@ function sourceKey(rule) {
   return [rule.rulesetSourceType || "unknown", rule.rulesetSource || "unknown", rule.rulesetId ?? "unknown"].join(":");
 }
 
-function normalizeRulesetResponse(repository, rules) {
-  if (!Array.isArray(rules)) {
-    return {
-      repository: repository.name,
-      available: false,
-      defaultBranch: repository.default_branch || "main",
-      activeRuleCount: null,
-      hasActiveRules: null,
-      ruleTypes: [],
-      sources: [],
-      rules: [],
-    };
+function workflowKey(workflow) {
+  return [workflow.repositoryId ?? "unknown", workflow.path || "unknown", workflow.ref || "", workflow.sha || ""].join(":");
+}
+
+function unavailableObservation(repository) {
+  return {
+    repository: repository.name,
+    url: repository.html_url || null,
+    available: false,
+    defaultBranch: repository.default_branch || "main",
+    activeRuleCount: null,
+    hasActiveRules: null,
+    ruleTypes: [],
+    sources: [],
+    rules: [],
+    hasRequiredWorkflowRule: null,
+    requiredWorkflowCount: null,
+    requiredWorkflows: [],
+  };
+}
+
+function normalizeRulesetResponse(repository, rules, repositoryNameById) {
+  if (!Array.isArray(rules) || rules.length >= RULESET_PAGE_SIZE) {
+    // A full first page cannot prove there is no second page because githubRequest
+    // intentionally returns only the response body. Keep that evidence unavailable
+    // rather than silently treating a potentially truncated rule set as complete.
+    return unavailableObservation(repository);
   }
 
-  // A full first page cannot prove there is no second page because githubRequest
-  // intentionally returns only the response body. Keep that evidence unavailable
-  // rather than silently treating a potentially truncated rule set as complete.
-  if (rules.length >= RULESET_PAGE_SIZE) {
-    return {
-      repository: repository.name,
-      available: false,
-      defaultBranch: repository.default_branch || "main",
-      activeRuleCount: null,
-      hasActiveRules: null,
-      ruleTypes: [],
-      sources: [],
-      rules: [],
-    };
-  }
-
-  const normalizedRules = rules.map(normalizeRulesetRule);
+  const normalizedRules = rules.map((rule) => normalizeRulesetRule(rule, repositoryNameById));
   const ruleTypes = [...new Set(normalizedRules.map((rule) => rule.type))].slice(0, MAX_RULE_TYPES);
   const sourceMap = new Map();
+  const workflowMap = new Map();
+
   for (const rule of normalizedRules) {
     const key = sourceKey(rule);
     if (!sourceMap.has(key)) {
@@ -81,10 +109,19 @@ function normalizeRulesetResponse(repository, rules) {
         source: rule.rulesetSource,
       });
     }
+
+    for (const workflow of rule.requiredWorkflows) {
+      const key = workflowKey(workflow);
+      if (!workflowMap.has(key)) workflowMap.set(key, workflow);
+    }
   }
+
+  const requiredWorkflows = [...workflowMap.values()].slice(0, MAX_REQUIRED_WORKFLOW_REFERENCES);
+  const hasRequiredWorkflowRule = normalizedRules.some((rule) => rule.type === "workflows");
 
   return {
     repository: repository.name,
+    url: repository.html_url || null,
     available: true,
     defaultBranch: repository.default_branch || "main",
     activeRuleCount: normalizedRules.length,
@@ -92,10 +129,13 @@ function normalizeRulesetResponse(repository, rules) {
     ruleTypes,
     sources: [...sourceMap.values()].slice(0, MAX_RULESET_SOURCES),
     rules: normalizedRules.slice(0, MAX_RULE_DETAILS),
+    hasRequiredWorkflowRule,
+    requiredWorkflowCount: requiredWorkflows.length,
+    requiredWorkflows,
   };
 }
 
-async function fetchRepositoryRulesets(env, owner, repository) {
+async function fetchRepositoryRulesets(env, owner, repository, repositoryNameById) {
   const branch = repository.default_branch || "main";
   const rules = await githubRequest(
     env,
@@ -107,20 +147,7 @@ async function fetchRepositoryRulesets(env, owner, repository) {
     },
   );
 
-  return normalizeRulesetResponse(repository, rules);
-}
-
-function unavailableObservation(repository) {
-  return {
-    repository: repository.name,
-    available: false,
-    defaultBranch: repository.default_branch || "main",
-    activeRuleCount: null,
-    hasActiveRules: null,
-    ruleTypes: [],
-    sources: [],
-    rules: [],
-  };
+  return normalizeRulesetResponse(repository, rules, repositoryNameById);
 }
 
 export function buildRulesetCoverage(repositories, observations = []) {
@@ -137,6 +164,7 @@ export function buildRulesetCoverage(repositories, observations = []) {
 
   rows.sort((a, b) => {
     if (a.available !== b.available) return a.available ? 1 : -1;
+    if (a.hasRequiredWorkflowRule !== b.hasRequiredWorkflowRule) return a.hasRequiredWorkflowRule ? -1 : 1;
     if (a.hasActiveRules !== b.hasActiveRules) return a.hasActiveRules ? -1 : 1;
     return a.repository.localeCompare(b.repository);
   });
@@ -150,21 +178,31 @@ export function buildRulesetCoverage(repositories, observations = []) {
     0,
     checkedRepositories - repositoriesWithActiveRules,
   );
+  const repositoriesWithRequiredWorkflowRules = rows.filter(
+    (row) => row.available && row.hasRequiredWorkflowRule === true,
+  ).length;
   const observedActiveRules = rows.reduce(
     (total, row) => total + (row.available ? Number(row.activeRuleCount || 0) : 0),
+    0,
+  );
+  const observedRequiredWorkflowReferences = rows.reduce(
+    (total, row) => total + (row.available ? Number(row.requiredWorkflowCount || 0) : 0),
     0,
   );
 
   return {
     status: coverageStatus(rows.length, checkedRepositories, unavailableRepositories),
     scope: "active-default-branch-rulesets",
+    workflowObservationModel: "active-ruleset-required-workflow-references",
     apiVersion: RULESET_API_VERSION,
     totalRepositories: rows.length,
     checkedRepositories,
     repositoriesWithActiveRules,
     repositoriesWithNoActiveRules,
+    repositoriesWithRequiredWorkflowRules,
     unavailableRepositories,
     observedActiveRules,
+    observedRequiredWorkflowReferences,
     repositories: rows,
   };
 }
@@ -173,13 +211,18 @@ export async function fetchRulesetCoverage(env, owner, repositories, options = {
   const candidates = repositories.filter((repository) => (
     repository.owner?.login?.toLowerCase() === owner.toLowerCase()
   ));
+  const repositoryNameById = new Map(
+    candidates
+      .map((repository) => [finiteId(repository.id), repository.name])
+      .filter(([id]) => id),
+  );
   const concurrency = boundedConcurrency(options.rulesetConcurrency);
   const observations = [];
 
   for (let index = 0; index < candidates.length; index += concurrency) {
     const batch = candidates.slice(index, index + concurrency);
     const settled = await Promise.allSettled(
-      batch.map((repository) => fetchRepositoryRulesets(env, owner, repository)),
+      batch.map((repository) => fetchRepositoryRulesets(env, owner, repository, repositoryNameById)),
     );
 
     settled.forEach((result, batchIndex) => {

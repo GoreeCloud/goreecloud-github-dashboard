@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   RULESET_API_VERSION,
   fetchRulesetCoverage,
+  normalizeRequiredWorkflow,
   normalizeRulesetRule,
 } from "../functions/lib/rulesets.js";
 
@@ -51,7 +52,28 @@ function rulesFor(name) {
   ];
 }
 
-test("ruleset rule normalization keeps only bounded identity and source metadata", () => {
+function workflowRule(workflowRepositoryId = 202) {
+  return {
+    type: "workflows",
+    ruleset_source_type: "Organization",
+    ruleset_source: OWNER,
+    ruleset_id: 99,
+    parameters: {
+      do_not_enforce_on_create: false,
+      workflows: [
+        {
+          path: ".github/workflows/platform-contract.yml",
+          ref: "refs/heads/main",
+          repository_id: workflowRepositoryId,
+          sha: "0123456789abcdef0123456789abcdef01234567",
+          ignored_extra: "not-forwarded",
+        },
+      ],
+    },
+  };
+}
+
+test("ruleset rule normalization keeps only bounded identity, source, and workflow-reference metadata", () => {
   assert.deepEqual(
     normalizeRulesetRule({
       type: "pull_request",
@@ -65,6 +87,27 @@ test("ruleset rule normalization keeps only bounded identity and source metadata
       rulesetId: 73,
       rulesetSourceType: "Organization",
       rulesetSource: OWNER,
+      requiredWorkflows: [],
+    },
+  );
+});
+
+test("required workflow normalization preserves only path, defining repository, ref, and sha", () => {
+  const names = new Map([[202, "goreecloud-platform-workflows"]]);
+  assert.deepEqual(
+    normalizeRequiredWorkflow({
+      path: ".github/workflows/platform-contract.yml",
+      repository_id: 202,
+      ref: "refs/heads/main",
+      sha: "0123456789abcdef0123456789abcdef01234567",
+      extra: "not-forwarded",
+    }, names),
+    {
+      path: ".github/workflows/platform-contract.yml",
+      repositoryId: 202,
+      repository: "goreecloud-platform-workflows",
+      ref: "refs/heads/main",
+      sha: "0123456789abcdef0123456789abcdef01234567",
     },
   );
 });
@@ -122,6 +165,64 @@ test("active rulesets preserve repository and organization sources without polic
       { rulesetId: 73, sourceType: "Organization", source: OWNER },
     ]);
     assert.equal("parameters" in observation.rules[0], false);
+    assert.equal(observation.hasRequiredWorkflowRule, false);
+    assert.deepEqual(observation.requiredWorkflows, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("active workflow rules expose bounded references and resolve accessible defining repositories", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const repoName = new URL(String(input)).pathname.split("/")[3];
+    if (repoName === "alpha") return response([workflowRule(202)]);
+    return response([]);
+  };
+
+  try {
+    const coverage = await fetchRulesetCoverage(
+      { GITHUB_TOKEN: TOKEN },
+      OWNER,
+      [
+        repository("alpha", { id: 101 }),
+        repository("goreecloud-platform-workflows", { id: 202 }),
+      ],
+    );
+    const alpha = coverage.repositories.find((item) => item.repository === "alpha");
+
+    assert.equal(alpha.hasRequiredWorkflowRule, true);
+    assert.equal(alpha.requiredWorkflowCount, 1);
+    assert.deepEqual(alpha.requiredWorkflows, [{
+      path: ".github/workflows/platform-contract.yml",
+      repositoryId: 202,
+      repository: "goreecloud-platform-workflows",
+      ref: "refs/heads/main",
+      sha: "0123456789abcdef0123456789abcdef01234567",
+    }]);
+    assert.equal("parameters" in alpha.rules[0], false);
+    assert.equal(alpha.rules[0].requiredWorkflows[0].repository, "goreecloud-platform-workflows");
+    assert.equal(coverage.repositoriesWithRequiredWorkflowRules, 1);
+    assert.equal(coverage.observedRequiredWorkflowReferences, 1);
+    assert.equal(coverage.workflowObservationModel, "active-ruleset-required-workflow-references");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("unknown required-workflow repository ids remain observable without inventing a repository name", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => response([workflowRule(999999)]);
+
+  try {
+    const coverage = await fetchRulesetCoverage(
+      { GITHUB_TOKEN: TOKEN },
+      OWNER,
+      [repository("alpha", { id: 101 })],
+    );
+
+    assert.equal(coverage.repositories[0].requiredWorkflows[0].repositoryId, 999999);
+    assert.equal(coverage.repositories[0].requiredWorkflows[0].repository, null);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -142,8 +243,10 @@ test("an empty active-rule response is valid observed evidence rather than unava
     assert.equal(coverage.checkedRepositories, 1);
     assert.equal(coverage.repositoriesWithActiveRules, 0);
     assert.equal(coverage.repositoriesWithNoActiveRules, 1);
+    assert.equal(coverage.repositoriesWithRequiredWorkflowRules, 0);
     assert.equal(coverage.repositories[0].available, true);
     assert.equal(coverage.repositories[0].hasActiveRules, false);
+    assert.equal(coverage.repositories[0].hasRequiredWorkflowRule, false);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -169,9 +272,11 @@ test("a full rules page remains unavailable because response-body-only paginatio
     assert.equal(coverage.checkedRepositories, 0);
     assert.equal(coverage.repositoriesWithActiveRules, 0);
     assert.equal(coverage.repositoriesWithNoActiveRules, 0);
+    assert.equal(coverage.repositoriesWithRequiredWorkflowRules, 0);
     assert.equal(coverage.unavailableRepositories, 1);
     assert.equal(coverage.repositories[0].available, false);
     assert.equal(coverage.repositories[0].hasActiveRules, null);
+    assert.equal(coverage.repositories[0].hasRequiredWorkflowRule, null);
   } finally {
     globalThis.fetch = originalFetch;
   }

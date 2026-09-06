@@ -20,7 +20,7 @@ api:
       purpose: Read-only normalized GitHub portfolio data for the private dashboard interface.
     - name: governance-api
       url: /api/governance
-      purpose: Read-only observation of baseline governance files, classic default-branch protection, and active default-branch ruleset rules across accessible owned repositories.
+      purpose: Read-only observation of baseline governance files, classic default-branch protection, active default-branch ruleset rules, and bounded required-workflow references across accessible owned repositories.
     - name: health
       url: /api/health
       purpose: Safe process-level liveness for the dashboard function runtime.
@@ -105,7 +105,7 @@ continuity:
 
 external_dependencies:
   - name: GitHub REST API
-    purpose: Authoritative read-only repository, issue, pull-request, release, workflow, rate-limit, and active default-branch ruleset data source.
+    purpose: Authoritative read-only repository, issue, pull-request, release, workflow, rate-limit, active default-branch ruleset, and required-workflow-reference data source.
     required: true
     version_constraint: null
   - name: GitHub GraphQL API
@@ -157,5 +157,5 @@ conformance:
     - GoreeCloud Mesh integration and acceptance remain blocked.
     - GoreeCloud Identity integration and authenticated runtime acceptance remain blocked.
     - Authenticated private-access deployment, least-privilege live credential validation, and representative live GitHub validation remain incomplete.
-    - Governance control-plane source observes baseline files, classic protection, and active rulesets, but repository-role applicability, rule-policy interpretation, representative live REST/GraphQL validation, and production acceptance remain incomplete.
+    - Governance control-plane source observes baseline files, classic protection, active rulesets, and required-workflow references, but repository-role applicability, governed-workflow policy satisfaction, workflow-revision acceptance, representative live REST/GraphQL validation, and production acceptance remain incomplete.
     - Cloudflare Pages deployment, monitoring, rollback, and explicit production approval remain incomplete.

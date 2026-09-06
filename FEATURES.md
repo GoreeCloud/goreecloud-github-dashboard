@@ -35,9 +35,12 @@ This record distinguishes verified source functionality from work that is partia
 - Separate classic default-branch protection observation using GitHub GraphQL `branchProtectionRules` plus `matchingRefs`, with bounded rule/ref pagination and normalized selected control flags.
 - Separate active ruleset observation using GitHub's exact-branch rules endpoint, including applicable repository- and organization-level active rulesets.
 - Active ruleset fan-out is bounded to six concurrent repository reads by default and eight maximum; a full 100-rule first page is treated as unavailable because pagination completeness cannot be proven from the response-body-only request helper.
-- Active ruleset browser data is deliberately bounded to rule type, ruleset id, source type, and source; raw ruleset parameters are not forwarded in the current slice.
-- Baseline files, classic protection, and active rulesets are independent evidence channels so an unavailable channel does not erase successful peer evidence.
-- Governance terminology is deliberately observational: file presence, matching classic rules, and active ruleset rules do not establish policy applicability, lifecycle eligibility, conformance, or Stable qualification.
+- Active ruleset browser data is deliberately bounded to rule type, ruleset id, source type, and source; non-workflow rule parameters are not forwarded.
+- Active ruleset `workflows` rules now expose bounded required-workflow reference evidence: workflow path, defining repository id, locally resolved accessible repository name when available, optional ref, and optional sha.
+- Required-workflow references are deduplicated and bounded to 20 per workflow rule and 40 per observed repository; unknown repository ids remain unresolved rather than receiving invented names.
+- Required-workflow observation reuses the existing active-ruleset response and adds no GitHub endpoint, permission, or repository fan-out.
+- Baseline files, classic protection, and active rulesets are independent evidence channels so an unavailable channel does not erase successful peer evidence; workflow-reference availability follows the active-ruleset channel.
+- Governance terminology is deliberately observational: file presence, matching classic rules, active ruleset rules, and workflow references do not establish policy applicability, lifecycle eligibility, conformance, or Stable qualification.
 - Four-state appearance policy: System, Light, Dark, and explicit Deep Dark, with an accessible deterministic cycle and persisted user selection.
 - Shared native appearance controller for both dashboard and governance views, including idempotent control installation and fail-soft browser-storage handling.
 - Superseded renderer-local binary Light/Dark logic and its capture-phase migration guard have been removed.
@@ -46,7 +49,7 @@ This record distinguishes verified source functionality from work that is partia
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
 - GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, health/readiness interfaces, governance endpoint/dependency metadata, and nonconformant status.
 - Exact-head Platform Contract CI wrapper pinned to the reviewed central contract implementation, including computed-result schema validation and a fail-closed Stable-eligibility assertion.
-- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, governance-observation, active-ruleset-observation, public-source-policy, Glaze-migration, and product/conformance source tests.
+- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, governance-observation, active-ruleset/required-workflow-observation, public-source-policy, Glaze-migration, and product/conformance source tests.
 
 ## Partial or acceptance-gated
 
@@ -54,9 +57,10 @@ This record distinguishes verified source functionality from work that is partia
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
 - **Public-source safety:** repository-local detection and source contracts are implemented, but hosted secret scanning, dependency/security automation, branch/ruleset enforcement, signed release provenance, and production deployment security validation remain separate acceptance work.
-- **Governance control plane:** baseline-file, classic default-branch protection, and active default-branch ruleset observation are implemented, but repository role/type, applicability, peer-manifest validation, required-workflow interpretation, security/dependency automation interpretation, release eligibility, broader documentation completeness, and platform-system integration state are not yet implemented.
+- **Governance control plane:** baseline-file, classic default-branch protection, active default-branch ruleset, and required-workflow reference observation are implemented, but repository role/type, applicability, peer-manifest validation, governed-workflow policy evaluation, security/dependency automation interpretation, release eligibility, broader documentation completeness, and platform-system integration state are not yet implemented.
 - **Governance runtime:** deterministic source/fixture coverage exists; representative live private-repository REST/GraphQL permission and rate-budget validation remains pending.
-- **Ruleset semantics:** active rule types and sources are observed, but the dashboard does not yet decide whether a returned `required_workflows`, status-check, code-scanning, merge-queue, deployment, or other rule satisfies GoreeCloud policy.
+- **Required-workflow semantics:** workflow-rule references are observed, but the dashboard does not decide whether an observed workflow is the applicable GoreeCloud-required workflow, whether the referenced revision is approved, or whether it executed successfully for a particular change.
+- **Other ruleset semantics:** active rule types and sources are observed, but the dashboard does not yet decide whether status-check, code-scanning, merge-queue, deployment, or other rules satisfy GoreeCloud policy.
 - **GitHub Actions coverage:** best-effort and dependent on the least-privilege runtime credential's supported read permission.
 - **Private deployment:** source contains the deployment boundary, but an authenticated private-access layer and production runtime have not been accepted.
 - **Live GitHub validation:** deterministic fixtures exist; representative live public/private repository validation remains required.
@@ -68,7 +72,7 @@ This record distinguishes verified source functionality from work that is partia
 - GitHub repository, issue, pull-request, release, workflow, classic branch-protection, ruleset, or settings mutations.
 - Authoritative machine-readable repository role/type registry.
 - Automated classic branch-protection or ruleset enforcement.
-- Required-workflow policy evaluation for peer repositories.
+- Required-workflow policy satisfaction or execution-status certification for peer repositories.
 - Hosted secret-scanning acceptance evidence for the repository.
 - Release eligibility certification for peer repositories.
 - GoreeCloud Identity authentication or authorization integration.

@@ -173,6 +173,12 @@ function rulesetSourceLabels(sources = []) {
     .filter(Boolean);
 }
 
+function workflowLabel(workflow = {}) {
+  const source = workflow.repository || (workflow.repositoryId ? `repository #${workflow.repositoryId}` : "unknown repository");
+  const revision = workflow.ref || (workflow.sha ? workflow.sha.slice(0, 12) : null);
+  return `${source} · ${workflow.path || "unknown workflow path"}${revision ? ` @ ${revision}` : ""}`;
+}
+
 function renderRulesets(rulesets = {}) {
   const container = byId("rulesets-list");
   clear(container);
@@ -210,6 +216,48 @@ function renderRulesets(rulesets = {}) {
   container.append(card);
 }
 
+function renderRequiredWorkflows(rulesets = {}) {
+  const container = byId("required-workflows-list");
+  clear(container);
+  setText("required-workflows-count", rulesets.repositoriesWithRequiredWorkflowRules ?? 0);
+
+  const rows = (rulesets.repositories || []).filter(
+    (repository) => repository.available && repository.hasRequiredWorkflowRule,
+  );
+
+  if (!rows.length) {
+    container.append(emptyState("No active workflow rule was observed. This is not a policy-failure classification."));
+    return;
+  }
+
+  for (const repository of rows) {
+    const card = document.createElement("article");
+    card.className = "list-card";
+
+    const header = document.createElement("div");
+    header.className = "list-card-header";
+    const title = document.createElement("h3");
+    title.className = "item-title";
+    if (repository.url) title.append(createLink(repository.url, repository.repository));
+    else title.textContent = repository.repository;
+    header.append(title, createBadge("Workflow rule observed", "success"));
+
+    const description = document.createElement("p");
+    description.className = "item-description";
+    const workflows = repository.requiredWorkflows || [];
+    description.textContent = workflows.length
+      ? workflows.map(workflowLabel).join(" · ")
+      : "An active workflow rule was returned, but no valid workflow reference was normalized.";
+
+    const meta = document.createElement("p");
+    meta.className = "item-meta";
+    meta.textContent = "Required workflow evidence only · GoreeCloud policy satisfaction is not evaluated by this view.";
+
+    card.append(header, description, meta);
+    container.append(card);
+  }
+}
+
 function rulesetTerms(ruleset = {}) {
   if (!ruleset.available) return ["ruleset unavailable"];
   if (!ruleset.hasActiveRules) return ["no active rules", "no active rulesets"];
@@ -218,6 +266,12 @@ function rulesetTerms(ruleset = {}) {
     "active rulesets",
     ...(ruleset.ruleTypes || []),
     ...rulesetSourceLabels(ruleset.sources || []),
+    ...(ruleset.requiredWorkflows || []).flatMap((workflow) => [
+      workflow.path,
+      workflow.repository,
+      workflow.ref,
+      workflow.sha,
+    ]),
   ];
 }
 
@@ -341,6 +395,7 @@ function renderRepositoryRows(repositories = [], rulesetByRepository = new Map()
         `${ruleset.activeRuleCount || 0} active rule${ruleset.activeRuleCount === 1 ? "" : "s"}`,
         (ruleset.ruleTypes || []).length ? `Types: ${ruleset.ruleTypes.join(" · ")}` : null,
         sourceLabels.length ? `Sources: ${sourceLabels.join(" · ")}` : null,
+        ruleset.hasRequiredWorkflowRule ? `${ruleset.requiredWorkflowCount || 0} required workflow reference${ruleset.requiredWorkflowCount === 1 ? "" : "s"}` : null,
       ].filter(Boolean).join(" · ");
       rulesetCell.append(detail);
     } else {
@@ -384,6 +439,7 @@ function renderGovernance(data) {
   setText("stat-gaps", summary.repositoriesWithObservedGaps ?? 0);
   setText("stat-classic-protected", summary.classicProtectedRepositories ?? 0);
   setText("stat-rulesets-active", summary.repositoriesWithActiveRulesets ?? 0);
+  setText("stat-required-workflows", summary.repositoriesWithRequiredWorkflowRules ?? 0);
   setText("stat-unavailable", summary.unavailableRepositories ?? 0);
   setPill("generated-at", `Updated ${formatRelative(data.generatedAt)}`);
   setPill("api-state", "Read-only governance connected", true);
@@ -403,6 +459,7 @@ function renderGovernance(data) {
   renderProbes(governance.probes || []);
   renderClassicProtection(classicProtection);
   renderRulesets(rulesets);
+  renderRequiredWorkflows(rulesets);
   renderRepositoryRows(
     governance.repositories || [],
     rulesetByRepository,

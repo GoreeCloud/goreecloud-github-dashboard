@@ -7,20 +7,20 @@
 - Surface: `/governance.html`
 - API: `/api/governance`
 - Mode: read-only
-- Observation model: baseline files + classic branch protection + active ruleset rules
+- Observation model: baseline files + classic branch protection + active ruleset rules + required-workflow references
 - Production acceptance: not established
 
 ## Purpose
 
 The governance control-plane view provides a compact observation of repository-governance evidence across repositories accessible to the configured GoreeCloud GitHub credential.
 
-The current Development slice observes three independent evidence channels:
+The current Development slice observes three independent source channels:
 
 1. exact default-branch presence of four baseline files;
 2. classic GitHub branch-protection rules that GitHub reports as matching the exact default branch; and
-3. active GitHub ruleset rules that GitHub reports as applying to the exact default branch.
+3. active GitHub ruleset rules that GitHub reports as applying to the exact default branch, including bounded required-workflow references when an active workflow rule is returned.
 
-This remains an observation surface, not a compliance engine. Presence, absence, matching rules, or returned ruleset rules do not by themselves establish policy correctness, applicability, release eligibility, platform conformance, security acceptance, or Stable qualification.
+This remains an observation surface, not a compliance engine. Presence, absence, matching rules, returned ruleset rules, or required-workflow references do not by themselves establish policy correctness, applicability, release eligibility, platform conformance, security acceptance, or Stable qualification.
 
 ## Baseline-file observation
 
@@ -62,16 +62,39 @@ For each repository, the server requests GitHub's `GET /repos/{owner}/{repo}/rul
 
 This endpoint returns active rules that apply to the branch, including applicable repository-level and organization-level rulesets. Rulesets in `evaluate` or `disabled` enforcement states are not part of this active-rule response.
 
-The dashboard normalizes only bounded rule identity/source metadata for this slice:
+The dashboard normalizes bounded rule identity/source metadata:
 
 - rule type;
 - ruleset id;
 - ruleset source type; and
 - ruleset source.
 
-Raw rule parameters are not forwarded to the browser in the current slice. Required-workflow interpretation, security-policy interpretation, and release-policy interpretation remain future capabilities.
+For active workflow rules, the dashboard additionally normalizes only the workflow reference fields needed for observation. Other raw ruleset parameters remain excluded from the browser contract.
 
 Ruleset reads use a default maximum of six concurrent repository requests, with a hard internal maximum of eight. Each request asks for one page of up to 100 active rules. Because the shared GitHub request helper intentionally exposes response bodies rather than pagination headers, a full 100-rule page is treated as unavailable evidence instead of being silently classified as complete.
+
+## Required-workflow reference observation
+
+GitHub's current rules schema represents required workflow rules with rule type `workflows`. The rule's workflow references can include:
+
+- workflow file `path`;
+- defining `repository_id`;
+- optional workflow `ref`; and
+- optional workflow `sha`.
+
+The dashboard normalizes only those fields. When the defining repository id matches an accessible owned repository already present in the portfolio enumeration, its repository name is resolved locally from that existing evidence. Unknown repository ids remain ids; the dashboard does not invent a name or perform a new lookup.
+
+Required-workflow references are bounded to 20 references per workflow rule and 40 unique references per observed repository. Duplicate references are collapsed by defining repository, path, ref, and sha.
+
+The required-workflow surface uses the wording `Workflow rule observed`. It does **not** claim that:
+
+- the workflow is the GoreeCloud-required workflow for that repository role;
+- the workflow file still contains the expected governed implementation;
+- the referenced ref or sha is the approved version;
+- the workflow has executed successfully on a given change; or
+- the repository satisfies GoreeCloud required-workflow policy.
+
+Those are separate policy, source-validation, and runtime-evidence questions.
 
 ## Independent fail-soft channels
 
@@ -83,6 +106,8 @@ Failure of one channel does not erase successful evidence from the others. The a
 - `unavailable` only when all active channels are unavailable; and
 - `partial` for mixed known/unknown coverage.
 
+Required-workflow references are derived from the active-ruleset channel and inherit its availability. If active-ruleset evidence is unavailable, the dashboard does not infer that required workflow rules are absent.
+
 Per-channel unavailable evidence is never converted into absence.
 
 ## Interpretation boundary
@@ -91,7 +116,8 @@ The following distinctions are mandatory:
 
 - `No matching classic rule` means only that the classic-rule observation completed and no classic rule matched the exact default branch.
 - `No active rules` means only that the active-rules endpoint returned an empty set for the exact default branch.
-- An unavailable ruleset observation means the dashboard could not safely classify that repository's active ruleset state.
+- `Workflow rule observed` means only that an active ruleset returned a rule of type `workflows`; it is not a policy-satisfaction result.
+- An unavailable ruleset observation means the dashboard could not safely classify that repository's active ruleset or required-workflow-reference state.
 - None of these labels is a repository compliance classification.
 
 Classic rules and active rulesets can coexist. A repository can have no matching classic rule while still receiving protection from active rulesets.
@@ -123,7 +149,9 @@ The current slice still does not determine:
 - repository role/type;
 - whether Platform Contract v0.2 applies to a particular repository;
 - manifest validity or computed conformance for peer repositories;
-- required-workflow semantics from returned rule types;
+- which observed workflow references are required by GoreeCloud policy for a repository role/type;
+- whether an observed required workflow reference points to an approved governed workflow revision;
+- whether required workflows executed successfully for a particular pull request or push;
 - dependency/security automation coverage;
 - hosted secret-scanning acceptance;
 - release eligibility;
@@ -134,6 +162,6 @@ The current slice still does not determine:
 
 ## Acceptance boundary
 
-Automated source tests validate bounded batching/concurrency, exact default-branch targeting, file-presence normalization, classic matching-ref behavior, active-ruleset source/type normalization, unavailable-evidence handling, channel independence, credential non-disclosure, no-store responses, page structure, bootstrap order, and conservative terminology.
+Automated source tests validate bounded batching/concurrency, exact default-branch targeting, file-presence normalization, classic matching-ref behavior, active-ruleset source/type normalization, bounded required-workflow reference normalization, local repository-id resolution, unavailable-evidence handling, channel independence, credential non-disclosure, no-store responses, page structure, bootstrap order, and conservative terminology.
 
 These tests do not replace representative live private-repository validation, rendered form-factor review, accessibility acceptance, Cloudflare Pages deployment validation, authenticated private-access verification, production monitoring, rollback/recovery validation, or explicit production approval.

@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0f6f6a" />
     <meta
       name="description"
-      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, classic default-branch protection, and active ruleset rules."
+      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, classic default-branch protection, active rulesets, and required-workflow references."
     />
     <title>GoreeCloud GitHub Governance</title>
     <link rel="stylesheet" href="/styles.css" />
@@ -29,6 +29,7 @@
           <a class="nav-item" href="#baseline-files">Baseline files</a>
           <a class="nav-item" href="#classic-protection">Classic protection</a>
           <a class="nav-item" href="#rulesets">Rulesets</a>
+          <a class="nav-item" href="#required-workflows">Required workflows</a>
           <a class="nav-item" href="#repositories">Repositories</a>
         </nav>
 
@@ -53,9 +54,9 @@
         <section id="summary" class="hero panel panel-glaze" aria-labelledby="governance-title">
           <div class="hero-copy">
             <span class="hero-kicker">Read-only observation</span>
-            <h2 id="governance-title">See baseline files, classic branch rules, and active ruleset rules across the portfolio.</h2>
+            <h2 id="governance-title">See baseline files, branch protections, active rulesets, and required-workflow references across the portfolio.</h2>
             <p>
-              These signals are repository-state evidence, not proof of policy compliance. Ruleset observation includes enabled active rules that GitHub reports for each exact default branch; evaluate and disabled rulesets are outside this active-rule view.
+              These signals are repository-state evidence, not proof of policy compliance. Required-workflow references are shown when an active ruleset contains a workflow rule; whether those workflows satisfy GoreeCloud policy remains a separate governed decision.
             </p>
           </div>
           <div class="hero-meta">
@@ -92,6 +93,11 @@
             <span class="stat-label">Active rulesets</span>
             <strong class="stat-value" id="stat-rulesets-active">—</strong>
             <span class="stat-caption">Default branch has active ruleset rules</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Workflow rules</span>
+            <strong class="stat-value" id="stat-required-workflows">—</strong>
+            <span class="stat-caption">Repositories with active workflow rules</span>
           </article>
           <article class="stat-card panel">
             <span class="stat-label">File unavailable</span>
@@ -141,6 +147,19 @@
           </div>
         </section>
 
+        <section id="required-workflows" class="panel section-panel repository-section" aria-labelledby="required-workflows-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Active workflow-rule references</p>
+              <h2 id="required-workflows-heading">Required workflow observation</h2>
+            </div>
+            <span class="section-count" id="required-workflows-count">0</span>
+          </div>
+          <div id="required-workflows-list" class="card-list" aria-live="polite">
+            <div class="empty-state">Refresh to inspect required-workflow references.</div>
+          </div>
+        </section>
+
         <section id="repositories" class="panel section-panel repository-section" aria-labelledby="repo-heading">
           <div class="section-heading repository-heading">
             <div>
@@ -149,7 +168,7 @@
             </div>
             <label class="search-field">
               <span class="sr-only">Search governance observations</span>
-              <input id="governance-search" type="search" placeholder="Search repositories, gaps, protection, or rulesets" autocomplete="off" />
+              <input id="governance-search" type="search" placeholder="Search repositories, gaps, protection, rulesets, or workflows" autocomplete="off" />
             </label>
           </div>
           <div class="table-wrap">
@@ -182,8 +201,8 @@
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
         <a href="/">Dashboard</a>
-        <a href="#classic-protection">Classic</a>
         <a href="#rulesets">Rulesets</a>
+        <a href="#required-workflows">Workflows</a>
         <a href="#repositories">Repos</a>
       </nav>
     </div>

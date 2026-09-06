@@ -19,6 +19,9 @@ test("governance page keeps the same no-inline-script and no-inline-style bounda
   assert.match(html, /id="rulesets"/);
   assert.match(html, /id="rulesets-list"/);
   assert.match(html, /id="stat-rulesets-active"/);
+  assert.match(html, /id="required-workflows"/);
+  assert.match(html, /id="required-workflows-list"/);
+  assert.match(html, /id="stat-required-workflows"/);
   assert.match(html, /id="governance-table-body"/);
   assert.match(html, /colspan="7"/);
   assert.match(html, /src="\/governance-bootstrap\.js"/);
@@ -45,8 +48,11 @@ test("governance renderer uses only the read-only governance endpoint and labels
   assert.match(renderer, /Active rules/);
   assert.match(renderer, /No active rules/);
   assert.match(renderer, /evaluate\/disabled rulesets are outside this view/);
-  assert.doesNotMatch(renderer, /compliant/i);
-  assert.doesNotMatch(renderer, /noncompliant/i);
+  assert.match(renderer, /Workflow rule observed/);
+  assert.match(renderer, /policy satisfaction is not evaluated/i);
+  assert.match(renderer, /not a policy-failure classification/);
+  assert.doesNotMatch(renderer, /\bcompliant\b/i);
+  assert.doesNotMatch(renderer, /\bnoncompliant\b/i);
 });
 
 test("main Glaze bootstrap exposes the governance control plane without duplicating its active page navigation", () => {

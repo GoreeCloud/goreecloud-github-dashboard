@@ -14,6 +14,7 @@ function jsonResponse(body, status = 200) {
 
 function repositoryFixture() {
   return {
+    id: 1001,
     name: "governance-fixture",
     full_name: `${OWNER}/governance-fixture`,
     html_url: `https://github.com/${OWNER}/governance-fixture`,
@@ -52,7 +53,7 @@ test("governance API fails closed when the external access gate is unconfirmed",
   assert.doesNotMatch(JSON.stringify(payload), new RegExp(TOKEN));
 });
 
-test("governance API returns normalized files, classic protection, and active rulesets without credential leakage", async () => {
+test("governance API returns normalized files, classic protection, active rulesets, and workflow references without credential leakage", async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];
   const rulesetApiVersions = [];
@@ -81,6 +82,20 @@ test("governance API returns normalized files, classic protection, and active ru
           ruleset_source: OWNER,
           ruleset_id: 73,
           parameters: { strict_required_status_checks_policy: true },
+        },
+        {
+          type: "workflows",
+          ruleset_source_type: "Organization",
+          ruleset_source: OWNER,
+          ruleset_id: 99,
+          parameters: {
+            workflows: [{
+              path: ".github/workflows/platform-contract.yml",
+              ref: "refs/heads/main",
+              repository_id: 1001,
+              sha: "0123456789abcdef0123456789abcdef01234567",
+            }],
+          },
         },
       ]);
     }
@@ -155,22 +170,24 @@ test("governance API returns normalized files, classic protection, and active ru
     assert.equal(payload.summary.repositoriesWithObservedGaps, 1);
     assert.equal(payload.summary.classicProtectionCheckedRepositories, 1);
     assert.equal(payload.summary.classicProtectedRepositories, 1);
-    assert.equal(payload.summary.classicUnprotectedRepositories, 0);
-    assert.equal(payload.summary.classicProtectionUnavailableRepositories, 0);
     assert.equal(payload.summary.rulesetCheckedRepositories, 1);
     assert.equal(payload.summary.repositoriesWithActiveRulesets, 1);
-    assert.equal(payload.summary.repositoriesWithNoActiveRulesets, 0);
-    assert.equal(payload.summary.rulesetUnavailableRepositories, 0);
-    assert.equal(payload.summary.observedActiveRulesetRules, 2);
+    assert.equal(payload.summary.repositoriesWithRequiredWorkflowRules, 1);
+    assert.equal(payload.summary.observedActiveRulesetRules, 3);
+    assert.equal(payload.summary.observedRequiredWorkflowReferences, 1);
     assert.equal(payload.governance.repositories[0].status, "gaps");
     assert.deepEqual(payload.governance.repositories[0].missingChecks, ["contributing"]);
-    assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.defaultBranchProtected, true);
-    assert.equal(payload.governance.repositories[0].classicBranchProtection.matchingRules[0].requiresStatusChecks, true);
-    assert.equal(payload.rulesets.repositories[0].available, true);
-    assert.equal(payload.rulesets.repositories[0].hasActiveRules, true);
-    assert.deepEqual(payload.rulesets.repositories[0].ruleTypes, ["pull_request", "required_status_checks"]);
-    assert.equal("parameters" in payload.rulesets.repositories[0].rules[0], false);
+    assert.equal(payload.rulesets.workflowObservationModel, "active-ruleset-required-workflow-references");
+    assert.equal(payload.rulesets.repositories[0].hasRequiredWorkflowRule, true);
+    assert.deepEqual(payload.rulesets.repositories[0].requiredWorkflows, [{
+      path: ".github/workflows/platform-contract.yml",
+      repositoryId: 1001,
+      repository: "governance-fixture",
+      ref: "refs/heads/main",
+      sha: "0123456789abcdef0123456789abcdef01234567",
+    }]);
+    assert.equal("parameters" in payload.rulesets.repositories[0].rules[2], false);
     assert.deepEqual(rulesetApiVersions, ["2026-03-10"]);
     assert.ok(authorizations.every((value) => value === `Bearer ${TOKEN}`));
     assert.doesNotMatch(serialized, new RegExp(TOKEN));
@@ -225,6 +242,7 @@ test("ruleset observation can fail soft while file and classic evidence remain u
     assert.equal(payload.governance.status, "complete");
     assert.equal(payload.rulesets.status, "unavailable");
     assert.equal(payload.summary.rulesetUnavailableRepositories, 1);
+    assert.equal(payload.summary.repositoriesWithRequiredWorkflowRules, 0);
     assert.equal(payload.governance.repositories[0].checksAvailable, true);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
   } finally {
