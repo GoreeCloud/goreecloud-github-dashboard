@@ -17,9 +17,9 @@ test("governance page keeps the same no-inline-script and no-inline-style bounda
   assert.match(html, /src="\/governance-bootstrap\.js"/);
 });
 
-test("governance bootstrap applies Glaze, appearance, refresh discipline, then the renderer", () => {
+test("governance bootstrap applies Glaze, shared appearance, refresh discipline, then the renderer", () => {
   const glazeIndex = bootstrap.indexOf('import "./glaze-ui.js"');
-  const appearanceIndex = bootstrap.indexOf('import "./appearance-guard.js"');
+  const appearanceIndex = bootstrap.indexOf('import "./appearance-controller.js"');
   const refreshIndex = bootstrap.indexOf('import "./refresh-guard.js"');
   const governanceIndex = bootstrap.indexOf('import "./governance.js"');
 
