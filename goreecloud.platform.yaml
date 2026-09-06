@@ -18,6 +18,9 @@ api:
     - name: dashboard-api
       url: /api/dashboard
       purpose: Read-only normalized GitHub portfolio data for the private dashboard interface.
+    - name: governance-api
+      url: /api/governance
+      purpose: Read-only presence-only observation of baseline governance files across accessible owned repositories.
     - name: health
       url: /api/health
       purpose: Safe process-level liveness for the dashboard function runtime.
@@ -105,6 +108,10 @@ external_dependencies:
     purpose: Authoritative read-only repository, issue, pull-request, release, workflow, and rate-limit data source.
     required: true
     version_constraint: null
+  - name: GitHub GraphQL API
+    purpose: Batched read-only default-branch governance-file observation without per-file REST request multiplication.
+    required: true
+    version_constraint: null
   - name: Cloudflare Pages and Pages Functions
     purpose: Planned static hosting and server-side GitHub aggregation runtime.
     required: true
@@ -121,9 +128,11 @@ compatibility:
     - goreecloud-platform-contract==0.2
     - glaze-ui==1.1.0
     - github-rest-api
+    - github-graphql-api
     - authenticated-private-access-layer
   provides:
     - github-dashboard-read-only-api
+    - github-dashboard-governance-observation
     - github-dashboard-health-readiness
     - github-portfolio-operational-view
 
@@ -138,6 +147,7 @@ conformance:
     - docs/PLATFORM_CONFORMANCE.md
     - docs/GLAZE_UI_CONFORMANCE.md
     - docs/OPERATIONAL_HEALTH.md
+    - docs/GOVERNANCE_CONTROL_PLANE.md
   blockers:
     - GoreeCloud Manager integration and acceptance remain blocked.
     - Privacy Shield integration and acceptance remain blocked.
@@ -147,4 +157,5 @@ conformance:
     - GoreeCloud Mesh integration and acceptance remain blocked.
     - GoreeCloud Identity integration and authenticated runtime acceptance remain blocked.
     - Authenticated private-access deployment, least-privilege live credential validation, and representative live GitHub validation remain incomplete.
+    - Governance control-plane source exists, but repository-role applicability, live GraphQL permission validation, and production acceptance remain incomplete.
     - Cloudflare Pages deployment, monitoring, rollback, and explicit production approval remain incomplete.
