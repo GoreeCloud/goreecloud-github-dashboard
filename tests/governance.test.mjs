@@ -94,6 +94,7 @@ test("governance coverage reports observed presence and absence without calling 
     assert.equal(contributing.present, 1);
     assert.equal(contributing.absent, 1);
     assert.equal(contributing.unavailable, 0);
+    assert.equal(contributing.status, "complete");
 
     const alpha = coverage.repositories.find((item) => item.name === "alpha");
     assert.equal(alpha.status, "gaps");
@@ -124,12 +125,13 @@ test("GraphQL errors remain unavailable instead of becoming false missing-file c
       repositories,
     );
 
-    assert.equal(coverage.status, "partial");
+    assert.equal(coverage.status, "unavailable");
     assert.equal(coverage.checkedRepositories, 0);
     assert.equal(coverage.unavailableRepositories, 2);
     assert.equal(coverage.repositoriesWithObservedGaps, 0);
     assert.ok(coverage.repositories.every((item) => item.status === "unavailable"));
     assert.ok(coverage.repositories.every((item) => item.missingChecks.length === 0));
+    assert.ok(coverage.probes.every((probe) => probe.status === "unavailable"));
     assert.ok(coverage.probes.every((probe) => probe.absent === 0));
     assert.ok(coverage.probes.every((probe) => probe.unavailable === 2));
   } finally {
@@ -162,10 +164,12 @@ test("governance observation batches are bounded and preserve successful peer ba
     );
 
     assert.equal(requests, 2);
+    assert.equal(coverage.status, "partial");
     assert.equal(coverage.checkedRepositories, 20);
     assert.equal(coverage.unavailableRepositories, 1);
     assert.equal(coverage.repositoriesWithAllObservedFiles, 20);
     assert.equal(coverage.repositoriesWithObservedGaps, 0);
+    assert.ok(coverage.probes.every((probe) => probe.status === "partial"));
     assert.equal(coverage.repositories.find((item) => item.name === "repo-21").status, "unavailable");
   } finally {
     globalThis.fetch = originalFetch;
