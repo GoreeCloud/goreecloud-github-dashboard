@@ -2,6 +2,33 @@
 
 All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git history remains authoritative for exact commits and pull requests.
 
+## 0.3.0-dev — continued 2026-09-06
+
+### Added
+
+- Separate policy-defined documentation evidence in the read-only governance control plane for root `README.md`, `SPECIFICATIONS.md`, `FEATURES.md`, `BENEFITS.md`, `COMPETITIVE-OBJECTIVES.md`, and `BRANDING.md`.
+- Per-repository and portfolio documentation observation summaries with explicit `repository-role-unclassified` applicability so absent files cannot be misrepresented as policy failure before repository role/type classification exists.
+- Root `SPECIFICATIONS.md` as the version-coupled Development product specification, including the public-source/private-deployment boundary, governance observation contract, current verified GLAZE UI V1.1 / 1.1.0 source target, Platform Contract state, acceptance gates, and non-goals.
+- `scripts/validate-repository-policy.mjs` enforcing the six mandatory application/service repository documents and README links to the five non-README records.
+- Governance fixture, API-contract, and page-contract coverage for documentation paths, unavailable evidence, conservative applicability language, eight-column repository presentation, and search terms.
+
+### Changed
+
+- The existing bounded GraphQL governance batch now observes the six documentation paths alongside the four historical baseline paths without adding a GitHub endpoint, permission, or repository fan-out.
+- Baseline-file and documentation results are normalized independently so the existing four-file baseline semantics remain unchanged.
+- `/api/governance` now reports documentation summary counts and the observation model `baseline-files-documentation-evidence-classic-protection-active-rulesets`.
+- `/governance.html` now exposes dedicated documentation navigation, summary cards, evidence cards, and a repository-table column while retaining classic protection, active rulesets, and required-workflow references as separate evidence.
+- README, FEATURES, and `docs/GOVERNANCE_CONTROL_PLANE.md` now document the six-file evidence channel and the unresolved repository role/type applicability gate.
+- `npm run check` now includes repository-policy documentation validation.
+
+### Security and truthfulness
+
+- Documentation presence or absence is observation only; it does not establish repository policy compliance, release eligibility, conformance, or Stable qualification.
+- Unavailable GraphQL evidence remains unavailable rather than becoming a false missing-file claim.
+- No GitHub mutation route, new GitHub permission, production deployment, private-access change, runtime credential expansion, or shared private-data cache is introduced by this continuation.
+- GLAZE UI remains pinned to the currently verified canonical source release V1.1 / 1.1.0; rendered and production acceptance remain pending.
+- The project remains in the Development lifecycle and its Platform Contract remains deliberately nonconformant.
+
 ## 0.3.0-dev — continued 2026-09-05
 
 ### Added

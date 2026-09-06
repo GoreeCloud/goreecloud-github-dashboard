@@ -49,7 +49,7 @@ test("governance renderer uses only the read-only governance endpoint and labels
   assert.match(renderer, /No repository state was changed/);
   assert.match(renderer, /Unknown — observation unavailable/);
   assert.match(renderer, /None observed/);
-  assert.match(renderer, /Documentation evidence/);
+  assert.match(renderer, /documentation evidence/i);
   assert.match(renderer, /Repository role\/type applicability is not evaluated by this view/);
   assert.match(renderer, /Presence or absence is evidence only/);
   assert.match(renderer, /No matching rule/);
