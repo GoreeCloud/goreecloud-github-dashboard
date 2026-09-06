@@ -7,7 +7,7 @@
 - Surface: `/governance.html`
 - API: `/api/governance`
 - Mode: read-only
-- Observation model: baseline files + policy-defined documentation evidence + classic branch protection + active ruleset rules + required-workflow references
+- Observation model: baseline files + policy-defined documentation evidence + Platform Contract component-type applicability evidence + classic branch protection + active ruleset rules + required-workflow references
 - Production acceptance: not established
 
 ## Purpose
@@ -16,12 +16,12 @@ The governance control-plane view provides a compact observation of repository-g
 
 The current Development slice observes four independent source channels:
 
-1. exact default-branch presence of four baseline files;
-2. exact default-branch presence of six policy-defined application/service documentation paths;
+1. exact default-branch presence of four baseline files, including `goreecloud.platform.yaml`;
+2. exact default-branch presence of six policy-defined application/service documentation paths, with bounded application/service applicability evidence when the Platform Contract explicitly declares `component.type`;
 3. classic GitHub branch-protection rules that GitHub reports as matching the exact default branch; and
 4. active GitHub ruleset rules that GitHub reports as applying to the exact default branch, including bounded required-workflow references when an active workflow rule is returned.
 
-This remains an observation surface, not a compliance engine. Presence, absence, matching rules, returned ruleset rules, or required-workflow references do not by themselves establish policy correctness, applicability, release eligibility, platform conformance, security acceptance, or Stable qualification.
+This remains an observation surface, not a compliance engine. Presence, absence, a declared component type, matching rules, returned ruleset rules, or required-workflow references do not by themselves establish policy correctness, manifest validity, release eligibility, platform conformance, security acceptance, or Stable qualification.
 
 ## Baseline-file observation
 
@@ -36,7 +36,7 @@ File presence uses the GitHub GraphQL API in batches of at most 20 repositories 
 
 A successful observation can report a file as present or absent. A failed GraphQL batch, GraphQL error, or missing repository node remains unavailable evidence and is not converted into a missing-file claim.
 
-## Documentation evidence observation
+## Documentation evidence and applicability observation
 
 The current Repository Control policy defines these six root Markdown records as mandatory for GoreeCloud application and service repositories:
 
@@ -51,9 +51,22 @@ The dashboard observes those paths on the exact default branch using the same Gr
 
 The evidence is deliberately normalized into its own `documentation` channel. It does not alter the historical four-file baseline result.
 
-Repository role/type applicability is not yet available as an authoritative machine-readable input to this application. Therefore the dashboard does not conclude that every accessible GoreeCloud repository must contain these six files. It reports only present, absent, or unavailable evidence and exposes the explicit applicability marker `repository-role-unclassified`.
+GoreeCloud Platform Contract v0.2 defines `component.type` as either `application` or `service`. The existing GraphQL file observation therefore also requests bounded text and byte-size metadata for the already-probed `goreecloud.platform.yaml` blob. The dashboard recognizes documentation applicability only when the exact default-branch manifest contains an explicit `component.type: application` or `component.type: service` declaration inside the `component` mapping.
 
-`Docs complete` means only that all six paths were present for the observed repository. `Docs gaps` means only that at least one path was absent from the successfully observed default branch. Neither label is a policy-satisfaction or failure result until repository role/type and applicability are separately governed.
+This is declaration evidence, not full manifest validation. The dashboard does **not** infer repository role from repository names, descriptions, visibility, topics, or neighboring projects. It also does not classify role when:
+
+- the Platform Contract is absent;
+- the file observation is unavailable;
+- the blob text is unavailable;
+- the blob exceeds the 32 KiB interpretation bound;
+- the component declaration is malformed or outside the expected mapping; or
+- the component type is not one of the two v0.2 values.
+
+Those cases remain `unclassified`. Raw Platform Contract text is used only server-side for this bounded declaration read and is not returned to the browser.
+
+Portfolio documentation summaries expose the applicability model `platform-contract-component-type-declaration`, counts for classified and unclassified repositories, application/service counts, and raw six-path presence evidence. Per-repository documentation evidence exposes the normalized applicability status and declared component type when safely available.
+
+`Docs complete` means only that all six paths were present for the observed repository. `Docs gaps` means only that at least one path was absent from the successfully observed default branch. For an explicitly classified application/service repository, the declaration establishes that the six-path policy category is applicable; it still does **not** establish compliance, release eligibility, or Stable qualification. For an unclassified repository, presence/absence remains evidence without a policy-applicability conclusion.
 
 ## Classic default-branch protection
 
@@ -135,7 +148,8 @@ Per-channel unavailable evidence is never converted into absence.
 The following distinctions are mandatory:
 
 - `Baseline gaps` means only that one or more of the four baseline paths were absent in a successfully observed default branch.
-- `Docs gaps` means only that one or more of the six policy-defined application/service documentation paths were absent; repository role/type applicability is not evaluated by this view.
+- `Docs gaps` means only that one or more of the six policy-defined application/service documentation paths were absent. An explicit Platform Contract `component.type` may establish application/service applicability, but the label itself is still not a compliance classification.
+- `Unclassified` documentation applicability means no safe application/service declaration was normalized from the bounded exact-default-branch Platform Contract evidence.
 - `No matching classic rule` means only that the classic-rule observation completed and no classic rule matched the exact default branch.
 - `No active rules` means only that the active-rules endpoint returned an empty set for the exact default branch.
 - `Workflow rule observed` means only that an active ruleset returned a rule of type `workflows`; it is not a policy-satisfaction result.
@@ -156,11 +170,15 @@ Classic rules and active rulesets can coexist. A repository can have no matching
 
 The active-rules endpoint requires only repository Metadata read permission for supported fine-grained credentials. The dashboard does not request organization ruleset administration access; applicable organization-level rules are observed through the branch-specific repository endpoint.
 
+The applicability classifier introduces no additional GitHub request. It reads only bounded text already returned inside the existing GraphQL file observation, returns normalized type/reason metadata rather than raw manifest text, and preserves the existing server-side credential boundary.
+
 Because the governance view can expose private repository identities and governance settings, it is not approved for public deployment.
 
 ## Authority boundary
 
-GitHub remains authoritative for repository state. Applicable GoreeCloud policies, Platform Contract rules, repository role/type registry, source-control governance, and platform-system evidence remain authoritative for interpretation.
+GitHub remains authoritative for repository state. The central Platform Contract schema remains authoritative for the permitted v0.2 component-type values. Applicable GoreeCloud policies, canonical project specifications, repository-local validated manifests, source-control governance, and platform-system evidence remain authoritative for interpretation.
+
+The dashboard's component-type parser is deliberately narrower than full Platform Contract validation. A recognized declaration is applicability evidence only; it must not be presented as proof that the complete manifest validates or that computed conformance is positive.
 
 GoreeCloud Manager or GoreeCloud Mesh may later present accepted governance state, but this dashboard does not transfer authority or infer positive conformance from observed source-control settings.
 
@@ -168,10 +186,9 @@ GoreeCloud Manager or GoreeCloud Mesh may later present accepted governance stat
 
 The current slice still does not determine:
 
-- repository role/type;
-- whether Platform Contract v0.2 applies to a particular repository;
-- manifest validity or computed conformance for peer repositories;
-- whether documentation-path absence is policy-relevant for a particular repository role/type;
+- repository role/type when no bounded readable Platform Contract explicitly declares `application` or `service`;
+- full Platform Contract validity or computed conformance for peer repositories;
+- whether an unclassified repository is subject to the six-file documentation policy through another governed authority;
 - which observed workflow references are required by GoreeCloud policy for a repository role/type;
 - whether an observed required workflow reference points to an approved governed workflow revision;
 - whether required workflows executed successfully for a particular pull request or push;
@@ -184,6 +201,8 @@ The current slice still does not determine:
 
 ## Acceptance boundary
 
-Automated source tests validate bounded batching/concurrency, exact default-branch targeting, baseline and documentation file-presence normalization, repository-role applicability disclaimers, classic matching-ref behavior, active-ruleset source/type normalization, bounded required-workflow reference normalization, local repository-id resolution, unavailable-evidence handling, channel independence, credential non-disclosure, no-store responses, page structure, bootstrap order, and conservative terminology.
+Automated source tests validate bounded batching/concurrency, exact default-branch targeting, baseline and documentation file-presence normalization, bounded Platform Contract blob-text requesting, strict application/service component-type parsing, classified/unclassified applicability counts, unavailable/unreadable declaration handling, classic matching-ref behavior, active-ruleset source/type normalization, bounded required-workflow reference normalization, local repository-id resolution, unavailable-evidence handling, channel independence, credential non-disclosure, no-store responses, page structure, bootstrap order, and conservative terminology.
+
+The exact-head Development validation for this increment passed 93/93 tests in `Validate GitHub dashboard foundation` run #102 / `34035215792`; the independent `Validate GoreeCloud Platform Contract v0.2` run #65 / `34035215793` also passed on the same source revision `0a6d1b4bca6eb8410d5c0e76ef862e15c2d96f3c`.
 
 These tests do not replace representative live private-repository validation, rendered form-factor review, accessibility acceptance, Cloudflare Pages deployment validation, authenticated private-access verification, production monitoring, rollback/recovery validation, or explicit production approval.
