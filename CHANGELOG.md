@@ -11,19 +11,31 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Root `SPECIFICATIONS.md` as the version-coupled Development product specification, including the public-source/private-deployment boundary, governance observation contract, current verified GLAZE UI V1.1 / 1.1.0 source target, Platform Contract state, acceptance gates, and non-goals.
 - `scripts/validate-repository-policy.mjs` enforcing the six mandatory application/service repository documents and README links to the five non-README records.
 - Governance fixture, API-contract, and page-contract coverage for documentation paths, unavailable evidence, conservative applicability language, eight-column repository presentation, and search terms.
+- Bounded Platform Contract component-type applicability evidence derived only from an explicit exact-default-branch `component.type: application|service` declaration in `goreecloud.platform.yaml`.
+- `tests/governance-applicability.test.mjs` covering strict component-type parsing, GraphQL blob-text selection, application/service classification, mixed classified/unclassified portfolios, and preservation of documentation-gap evidence.
 
 ### Changed
 
 - The existing bounded GraphQL governance batch now observes the six documentation paths alongside the four historical baseline paths without adding a GitHub endpoint, permission, or repository fan-out.
 - Baseline-file and documentation results are normalized independently so the existing four-file baseline semantics remain unchanged.
+- The existing Platform Contract file probe now requests bounded blob text/byte-size evidence in the same GraphQL request; manifest text is used server-side only to normalize application/service applicability and is not returned to the browser.
+- Documentation summaries now expose the applicability model `platform-contract-component-type-declaration`, classified/unclassified repository counts, application/service counts, and applicable documentation complete/gap counts while retaining raw six-path evidence for all safely observed repositories.
 - `/api/governance` now reports documentation summary counts and the observation model `baseline-files-documentation-evidence-classic-protection-active-rulesets`.
 - `/governance.html` now exposes dedicated documentation navigation, summary cards, evidence cards, and a repository-table column while retaining classic protection, active rulesets, and required-workflow references as separate evidence.
-- README, FEATURES, and `docs/GOVERNANCE_CONTROL_PLANE.md` now document the six-file evidence channel and the unresolved repository role/type applicability gate.
-- `npm run check` now includes repository-policy documentation validation.
+- README, FEATURES, and `docs/GOVERNANCE_CONTROL_PLANE.md` document the six-file evidence channel; the governance record now also documents bounded Platform Contract application/service applicability classification and its limits.
+- `npm run check` includes repository-policy documentation validation.
+
+### Validation
+
+- Exact source feature head `0a6d1b4bca6eb8410d5c0e76ef862e15c2d96f3c` passed `Validate GitHub dashboard foundation` run #102 / `34035215792` with 93/93 tests, repository validation, public-source validation, product/conformance validation, and repository-policy documentation validation.
+- `Validate GoreeCloud Platform Contract v0.2` run #65 / `34035215793` passed on that same exact source revision and preserved the Development/nonconformant fail-closed state.
 
 ### Security and truthfulness
 
 - Documentation presence or absence is observation only; it does not establish repository policy compliance, release eligibility, conformance, or Stable qualification.
+- A recognized Platform Contract `component.type` establishes only declared application/service applicability evidence. It does not validate the full manifest or establish computed conformance.
+- Platform Contract applicability parsing is bounded to 32 KiB and fails unclassified for absent, unavailable, oversized, unreadable, malformed, or unknown declarations; repository names and descriptions are never used to infer role.
+- Raw Platform Contract text is not returned to the browser.
 - Unavailable GraphQL evidence remains unavailable rather than becoming a false missing-file claim.
 - No GitHub mutation route, new GitHub permission, production deployment, private-access change, runtime credential expansion, or shared private-data cache is introduced by this continuation.
 - GLAZE UI remains pinned to the currently verified canonical source release V1.1 / 1.1.0; rendered and production acceptance remain pending.
