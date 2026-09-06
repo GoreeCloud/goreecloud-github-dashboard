@@ -8,15 +8,18 @@ const requiredFiles = [
   "docs/GLAZE_UI_CONFORMANCE.md",
   "docs/PLATFORM_CONFORMANCE.md",
   "docs/OPERATIONAL_HEALTH.md",
+  "docs/PUBLIC_SOURCE_BOUNDARY.md",
   "public/glaze-ui.js",
   "public/glaze-v1.1.css",
   "public/theme-policy.js",
   "public/appearance-guard.js",
   "functions/api/health.js",
   "functions/api/ready.js",
+  "scripts/validate-public-source.mjs",
   "tests/glaze-ui-conformance.test.mjs",
   "tests/appearance-policy.test.mjs",
   "tests/health-readiness.test.mjs",
+  "tests/public-source-policy.test.mjs",
   ".github/workflows/platform-contract.yml",
 ];
 
@@ -39,9 +42,34 @@ if (!failures.length) {
   const platformWorkflow = fs.readFileSync(".github/workflows/platform-contract.yml", "utf8");
   const health = fs.readFileSync("functions/api/health.js", "utf8");
   const ready = fs.readFileSync("functions/api/ready.js", "utf8");
+  const publicSourceBoundary = fs.readFileSync("docs/PUBLIC_SOURCE_BOUNDARY.md", "utf8");
+  const publicSourceValidator = fs.readFileSync("scripts/validate-public-source.mjs", "utf8");
 
   for (const record of ["COMPETITIVE-OBJECTIVES.md", "FEATURES.md", "BENEFITS.md"]) {
     if (!readme.includes(record)) failures.push(`README must link ${record}`);
+  }
+
+  if (!/public(?:\s*\/\s*|\s+and\s+)open[- ]source/i.test(readme)) {
+    failures.push("README must state the intentional public/open-source repository model.");
+  }
+  if (!/private(?:\s+and)?\s+authenticated/i.test(readme)) {
+    failures.push("README must preserve the private authenticated operational deployment model.");
+  }
+  if (!/public, open-source repository/i.test(publicSourceBoundary)) {
+    failures.push("Public source boundary must explicitly declare public/open-source source visibility.");
+  }
+  if (!/private, authenticated deployment/i.test(publicSourceBoundary)) {
+    failures.push("Public source boundary must explicitly preserve private authenticated deployment.");
+  }
+  for (const marker of [
+    "detectSecretMarkers",
+    "isForbiddenPublicArtifact",
+    "GITHUB_TOKEN",
+    "api\\.github\\.com",
+    "ACCESS_GATE_CONFIRMED=false",
+    'packageJson.private !== true',
+  ]) {
+    if (!publicSourceValidator.includes(marker)) failures.push(`Public source validator missing required marker: ${marker}`);
   }
 
   const expectedBootstrapOrder = [
