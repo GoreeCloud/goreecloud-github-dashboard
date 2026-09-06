@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0f6f6a" />
     <meta
       name="description"
-      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files and classic default-branch protection."
+      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, classic default-branch protection, and active ruleset rules."
     />
     <title>GoreeCloud GitHub Governance</title>
     <link rel="stylesheet" href="/styles.css" />
@@ -27,7 +27,8 @@
           <a class="nav-item" href="/">Dashboard</a>
           <a class="nav-item is-active" href="#summary" aria-current="page">Governance</a>
           <a class="nav-item" href="#baseline-files">Baseline files</a>
-          <a class="nav-item" href="#classic-protection">Branch protection</a>
+          <a class="nav-item" href="#classic-protection">Classic protection</a>
+          <a class="nav-item" href="#rulesets">Rulesets</a>
           <a class="nav-item" href="#repositories">Repositories</a>
         </nav>
 
@@ -52,9 +53,9 @@
         <section id="summary" class="hero panel panel-glaze" aria-labelledby="governance-title">
           <div class="hero-copy">
             <span class="hero-kicker">Read-only observation</span>
-            <h2 id="governance-title">See baseline files and classic default-branch protection across the portfolio.</h2>
+            <h2 id="governance-title">See baseline files, classic branch rules, and active ruleset rules across the portfolio.</h2>
             <p>
-              Observed files and branch-protection settings are repository-state evidence, not proof of policy compliance. Applicability, acceptance, lifecycle authority, and GitHub rulesets remain separate governance concerns.
+              These signals are repository-state evidence, not proof of policy compliance. Ruleset observation includes enabled active rules that GitHub reports for each exact default branch; evaluate and disabled rulesets are outside this active-rule view.
             </p>
           </div>
           <div class="hero-meta">
@@ -86,6 +87,11 @@
             <span class="stat-label">Classic protected</span>
             <strong class="stat-value" id="stat-classic-protected">—</strong>
             <span class="stat-caption">Default branch has a matching classic rule</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Active rulesets</span>
+            <strong class="stat-value" id="stat-rulesets-active">—</strong>
+            <span class="stat-caption">Default branch has active ruleset rules</span>
           </article>
           <article class="stat-card panel">
             <span class="stat-label">File unavailable</span>
@@ -122,6 +128,19 @@
           </div>
         </section>
 
+        <section id="rulesets" class="panel section-panel repository-section" aria-labelledby="rulesets-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Active repository + organization rulesets</p>
+              <h2 id="rulesets-heading">Default-branch ruleset observation</h2>
+            </div>
+            <span class="section-count" id="rulesets-count">0</span>
+          </div>
+          <div id="rulesets-list" class="card-list" aria-live="polite">
+            <div class="empty-state">Refresh to inspect active ruleset rules.</div>
+          </div>
+        </section>
+
         <section id="repositories" class="panel section-panel repository-section" aria-labelledby="repo-heading">
           <div class="section-heading repository-heading">
             <div>
@@ -130,7 +149,7 @@
             </div>
             <label class="search-field">
               <span class="sr-only">Search governance observations</span>
-              <input id="governance-search" type="search" placeholder="Search repositories, gaps, or protection" autocomplete="off" />
+              <input id="governance-search" type="search" placeholder="Search repositories, gaps, protection, or rulesets" autocomplete="off" />
             </label>
           </div>
           <div class="table-wrap">
@@ -142,12 +161,13 @@
                   <th scope="col">Observed files</th>
                   <th scope="col">Absent observed files</th>
                   <th scope="col">Classic branch protection</th>
+                  <th scope="col">Active rulesets</th>
                   <th scope="col">Updated</th>
                 </tr>
               </thead>
               <tbody id="governance-table-body">
                 <tr>
-                  <td colspan="6" class="empty-state">Refresh to load governance observations.</td>
+                  <td colspan="7" class="empty-state">Refresh to load governance observations.</td>
                 </tr>
               </tbody>
             </table>
@@ -162,8 +182,8 @@
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
         <a href="/">Dashboard</a>
-        <a href="#summary">Summary</a>
-        <a href="#classic-protection">Protection</a>
+        <a href="#classic-protection">Classic</a>
+        <a href="#rulesets">Rulesets</a>
         <a href="#repositories">Repos</a>
       </nav>
     </div>

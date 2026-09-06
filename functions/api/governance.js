@@ -1,5 +1,6 @@
 import { fetchAllRepositories } from "../lib/github.js";
 import { fetchGovernanceCoverage } from "../lib/governance.js";
+import { fetchRulesetCoverage } from "../lib/rulesets.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -10,6 +11,12 @@ function json(data, status = 200) {
       "X-Content-Type-Options": "nosniff",
     },
   });
+}
+
+function combinedObservationStatus(...statuses) {
+  if (statuses.every((status) => status === "complete")) return "complete";
+  if (statuses.every((status) => status === "unavailable")) return "unavailable";
+  return "partial";
 }
 
 export async function onRequestGet(context) {
@@ -38,14 +45,19 @@ export async function onRequestGet(context) {
 
   try {
     const repositories = await fetchAllRepositories(env, owner);
-    const governance = await fetchGovernanceCoverage(env, owner, repositories);
+    const [governance, rulesets] = await Promise.all([
+      fetchGovernanceCoverage(env, owner, repositories),
+      fetchRulesetCoverage(env, owner, repositories),
+    ]);
     const classicProtection = governance.classicBranchProtection || {};
+    const observationStatus = combinedObservationStatus(governance.status, rulesets.status);
 
     return json({
       generatedAt: new Date().toISOString(),
       owner,
       mode: "read-only",
-      observationModel: "presence-and-classic-branch-protection",
+      observationModel: "baseline-files-classic-protection-active-rulesets",
+      observationStatus,
       summary: {
         totalRepositories: governance.totalRepositories,
         checkedRepositories: governance.checkedRepositories,
@@ -56,8 +68,14 @@ export async function onRequestGet(context) {
         classicProtectedRepositories: classicProtection.protectedRepositories || 0,
         classicUnprotectedRepositories: classicProtection.unprotectedRepositories || 0,
         classicProtectionUnavailableRepositories: classicProtection.unavailableRepositories || 0,
+        rulesetCheckedRepositories: rulesets.checkedRepositories || 0,
+        repositoriesWithActiveRulesets: rulesets.repositoriesWithActiveRules || 0,
+        repositoriesWithNoActiveRulesets: rulesets.repositoriesWithNoActiveRules || 0,
+        rulesetUnavailableRepositories: rulesets.unavailableRepositories || 0,
+        observedActiveRulesetRules: rulesets.observedActiveRules || 0,
       },
       governance,
+      rulesets,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "GitHub governance aggregation failed.";

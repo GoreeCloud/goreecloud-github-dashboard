@@ -52,9 +52,10 @@ test("governance API fails closed when the external access gate is unconfirmed",
   assert.doesNotMatch(JSON.stringify(payload), new RegExp(TOKEN));
 });
 
-test("governance API returns normalized file and classic branch-protection observations without credential leakage", async () => {
+test("governance API returns normalized files, classic protection, and active rulesets without credential leakage", async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];
+  const rulesetApiVersions = [];
 
   globalThis.fetch = async (input, options = {}) => {
     const url = new URL(String(input));
@@ -62,6 +63,26 @@ test("governance API returns normalized file and classic branch-protection obser
 
     if (url.pathname === "/user/repos") {
       return jsonResponse([repositoryFixture()]);
+    }
+
+    if (url.pathname === "/repos/GoreeCloud/governance-fixture/rules/branches/main") {
+      rulesetApiVersions.push(options.headers?.["X-GitHub-Api-Version"] || null);
+      return jsonResponse([
+        {
+          type: "pull_request",
+          ruleset_source_type: "Repository",
+          ruleset_source: `${OWNER}/governance-fixture`,
+          ruleset_id: 42,
+          parameters: { required_approving_review_count: 2 },
+        },
+        {
+          type: "required_status_checks",
+          ruleset_source_type: "Organization",
+          ruleset_source: OWNER,
+          ruleset_id: 73,
+          parameters: { strict_required_status_checks_policy: true },
+        },
+      ]);
     }
 
     if (url.pathname === "/graphql") {
@@ -127,7 +148,8 @@ test("governance API returns normalized file and classic branch-protection obser
     assert.equal(response.status, 200);
     assert.equal(payload.owner, OWNER);
     assert.equal(payload.mode, "read-only");
-    assert.equal(payload.observationModel, "presence-and-classic-branch-protection");
+    assert.equal(payload.observationModel, "baseline-files-classic-protection-active-rulesets");
+    assert.equal(payload.observationStatus, "complete");
     assert.equal(payload.summary.totalRepositories, 1);
     assert.equal(payload.summary.checkedRepositories, 1);
     assert.equal(payload.summary.repositoriesWithObservedGaps, 1);
@@ -135,14 +157,76 @@ test("governance API returns normalized file and classic branch-protection obser
     assert.equal(payload.summary.classicProtectedRepositories, 1);
     assert.equal(payload.summary.classicUnprotectedRepositories, 0);
     assert.equal(payload.summary.classicProtectionUnavailableRepositories, 0);
+    assert.equal(payload.summary.rulesetCheckedRepositories, 1);
+    assert.equal(payload.summary.repositoriesWithActiveRulesets, 1);
+    assert.equal(payload.summary.repositoriesWithNoActiveRulesets, 0);
+    assert.equal(payload.summary.rulesetUnavailableRepositories, 0);
+    assert.equal(payload.summary.observedActiveRulesetRules, 2);
     assert.equal(payload.governance.repositories[0].status, "gaps");
     assert.deepEqual(payload.governance.repositories[0].missingChecks, ["contributing"]);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.defaultBranchProtected, true);
     assert.equal(payload.governance.repositories[0].classicBranchProtection.matchingRules[0].requiresStatusChecks, true);
+    assert.equal(payload.rulesets.repositories[0].available, true);
+    assert.equal(payload.rulesets.repositories[0].hasActiveRules, true);
+    assert.deepEqual(payload.rulesets.repositories[0].ruleTypes, ["pull_request", "required_status_checks"]);
+    assert.equal("parameters" in payload.rulesets.repositories[0].rules[0], false);
+    assert.deepEqual(rulesetApiVersions, ["2026-03-10"]);
     assert.ok(authorizations.every((value) => value === `Bearer ${TOKEN}`));
     assert.doesNotMatch(serialized, new RegExp(TOKEN));
     assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ruleset observation can fail soft while file and classic evidence remain usable", async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (input, options = {}) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/user/repos") return jsonResponse([repositoryFixture()]);
+    if (url.pathname.includes("/rules/branches/")) return jsonResponse({ message: "forbidden" }, 403);
+    if (url.pathname === "/graphql") {
+      const query = graphqlQuery(options);
+      if (query.includes("GoreeCloudClassicBranchProtectionObservation")) {
+        return jsonResponse({
+          data: {
+            r0: {
+              name: "governance-fixture",
+              branchProtectionRules: { pageInfo: { hasNextPage: false }, nodes: [] },
+            },
+          },
+        });
+      }
+      return jsonResponse({
+        data: {
+          r0: {
+            name: "governance-fixture",
+            platformContract: { oid: "platform" },
+            security: { oid: "security" },
+            contributing: { oid: "contributing" },
+            codeowners: { oid: "codeowners" },
+          },
+        },
+      });
+    }
+    throw new Error(`Unhandled endpoint: ${url.pathname}`);
+  };
+
+  try {
+    const response = await onRequestGet({
+      env: { GITHUB_OWNER: OWNER, GITHUB_TOKEN: TOKEN, ACCESS_GATE_CONFIRMED: "true" },
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.observationStatus, "partial");
+    assert.equal(payload.governance.status, "complete");
+    assert.equal(payload.rulesets.status, "unavailable");
+    assert.equal(payload.summary.rulesetUnavailableRepositories, 1);
+    assert.equal(payload.governance.repositories[0].checksAvailable, true);
+    assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
   } finally {
     globalThis.fetch = originalFetch;
   }

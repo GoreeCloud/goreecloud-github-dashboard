@@ -16,8 +16,11 @@ test("governance page keeps the same no-inline-script and no-inline-style bounda
   assert.match(html, /id="classic-protection"/);
   assert.match(html, /id="classic-protection-list"/);
   assert.match(html, /id="stat-classic-protected"/);
+  assert.match(html, /id="rulesets"/);
+  assert.match(html, /id="rulesets-list"/);
+  assert.match(html, /id="stat-rulesets-active"/);
   assert.match(html, /id="governance-table-body"/);
-  assert.match(html, /colspan="6"/);
+  assert.match(html, /colspan="7"/);
   assert.match(html, /src="\/governance-bootstrap\.js"/);
 });
 
@@ -39,7 +42,9 @@ test("governance renderer uses only the read-only governance endpoint and labels
   assert.match(renderer, /Unknown — observation unavailable/);
   assert.match(renderer, /None observed/);
   assert.match(renderer, /No matching rule/);
-  assert.match(renderer, /GitHub rulesets (?:are )?not (?:included|evaluated)/);
+  assert.match(renderer, /Active rules/);
+  assert.match(renderer, /No active rules/);
+  assert.match(renderer, /evaluate\/disabled rulesets are outside this view/);
   assert.doesNotMatch(renderer, /compliant/i);
   assert.doesNotMatch(renderer, /noncompliant/i);
 });

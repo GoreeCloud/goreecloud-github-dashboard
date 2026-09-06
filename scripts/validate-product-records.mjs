@@ -19,11 +19,13 @@ const requiredFiles = [
   "functions/api/health.js",
   "functions/api/ready.js",
   "functions/lib/governance.js",
+  "functions/lib/rulesets.js",
   "scripts/validate-public-source.mjs",
   "tests/glaze-ui-conformance.test.mjs",
   "tests/appearance-policy.test.mjs",
   "tests/health-readiness.test.mjs",
   "tests/governance.test.mjs",
+  "tests/rulesets.test.mjs",
   "tests/public-source-policy.test.mjs",
   ".github/workflows/platform-contract.yml",
 ];
@@ -42,6 +44,7 @@ if (!failures.length) {
   const governancePage = fs.readFileSync("public/governance.html", "utf8");
   const governanceRenderer = fs.readFileSync("public/governance.js", "utf8");
   const governanceSource = fs.readFileSync("functions/lib/governance.js", "utf8");
+  const rulesetsSource = fs.readFileSync("functions/lib/rulesets.js", "utf8");
   const governanceDocs = fs.readFileSync("docs/GOVERNANCE_CONTROL_PLANE.md", "utf8");
   const glazeRuntime = fs.readFileSync("public/glaze-ui.js", "utf8");
   const glazeMapping = fs.readFileSync("docs/GLAZE_UI_CONFORMANCE.md", "utf8");
@@ -109,14 +112,37 @@ if (!failures.length) {
   ]) {
     if (!governanceSource.includes(marker)) failures.push(`Governance source missing classic-protection invariant: ${marker}`);
   }
+  for (const marker of [
+    'RULESET_API_VERSION = "2026-03-10"',
+    "/rules/branches/",
+    "RULESET_PAGE_SIZE = 100",
+    "DEFAULT_RULESET_CONCURRENCY = 6",
+    "MAX_RULESET_CONCURRENCY = 8",
+    'scope: "active-default-branch-rulesets"',
+    "Promise.allSettled",
+  ]) {
+    if (!rulesetsSource.includes(marker)) failures.push(`Governance ruleset source missing invariant: ${marker}`);
+  }
   if (!governancePage.includes('id="classic-protection"') || !governancePage.includes('id="stat-classic-protected"')) {
     failures.push("Governance page must expose the classic default-branch protection surface.");
   }
-  if (!governanceRenderer.includes("GitHub rulesets are not included")) {
-    failures.push("Governance renderer must keep the classic-rule versus ruleset boundary explicit.");
+  if (!governancePage.includes('id="rulesets"') || !governancePage.includes('id="stat-rulesets-active"')) {
+    failures.push("Governance page must expose the active default-branch ruleset surface.");
   }
-  if (!governanceDocs.includes("## Rulesets boundary") || !governanceDocs.includes("must not be interpreted as proof")) {
-    failures.push("Governance documentation must prevent classic no-rule evidence from becoming a no-protection claim.");
+  for (const marker of [
+    "Classic branch-protection rules are shown separately from active ruleset rules",
+    "No enabled active ruleset rules returned for this default branch",
+    "evaluate/disabled rulesets are outside this view",
+  ]) {
+    if (!governanceRenderer.includes(marker)) failures.push(`Governance renderer missing evidence-boundary wording: ${marker}`);
+  }
+  for (const marker of [
+    "## Active ruleset observation",
+    "Raw rule parameters are not forwarded to the browser",
+    "## Independent fail-soft channels",
+    "None of these labels is a repository compliance classification",
+  ]) {
+    if (!governanceDocs.includes(marker)) failures.push(`Governance documentation missing ruleset boundary: ${marker}`);
   }
   if (/\b(?:non)?compliant\b/i.test(governanceRenderer)) {
     failures.push("Governance renderer must remain observational and must not classify repositories as compliant/noncompliant.");
