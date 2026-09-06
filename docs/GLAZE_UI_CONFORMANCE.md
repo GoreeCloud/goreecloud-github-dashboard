@@ -28,14 +28,14 @@ Deep Teal is the application interaction accent and Soft Amber is a restrained a
 
 ### Appearance
 
-The Development source now exposes four deterministic appearance states:
+The Development source exposes four deterministic appearance states:
 
 - **System** — follows the operating-system Light/Dark preference and updates through CSS media behavior without converting the preference into an application-owned mode.
 - **Light** — explicit light canvas and durable light surfaces.
 - **Dark** — explicit dark canvas with Deep Teal interaction accents.
 - **Deep Dark** — explicit near-black canvas and elevated dark surfaces, distinct from ordinary Dark and never inferred automatically from the system setting.
 
-The appearance control cycles `System → Light → Dark → Deep Dark → System`, persists only the selected mode, and receives an accessible label that names both the current and next mode. Appearance behavior is isolated from dashboard data rendering in a migration guard so the read-only data renderer remains unchanged.
+The appearance control cycles `System → Light → Dark → Deep Dark → System`, persists only the selected mode when browser storage is available, and receives an accessible label that names both the current and next mode. Dashboard and governance views share `public/appearance-controller.js`, which owns initialization and the appearance button directly. The superseded renderer-local binary Light/Dark implementation and the capture-phase migration workaround have been removed.
 
 ### Input and target sizing
 
@@ -52,6 +52,8 @@ Touch-capable controls use a 48 px minimum reference target. Keyboard focus rema
 ### Accessibility and resilience
 
 The source retains visible focus, skip navigation, Reduced Motion handling, Increased Contrast behavior, Forced Colors behavior, solid-surface fallbacks, and horizontal overflow for dense tables. The V1.1 layer adds a Reduced Transparency fallback, operating-system dark-preference behavior for System appearance, a solid fallback before optional `color-mix()`, and avoids making blur necessary for content comprehension.
+
+Appearance persistence is fail-soft: if browser storage is unavailable, the selected appearance remains usable for the current page rather than turning storage availability into a rendering dependency.
 
 ### Identity
 
