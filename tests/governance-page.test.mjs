@@ -13,7 +13,11 @@ test("governance page keeps the same no-inline-script and no-inline-style bounda
   assert.match(html, /href="#main"/);
   assert.match(html, /id="governance-search"/);
   assert.match(html, /id="probe-list"/);
+  assert.match(html, /id="classic-protection"/);
+  assert.match(html, /id="classic-protection-list"/);
+  assert.match(html, /id="stat-classic-protected"/);
   assert.match(html, /id="governance-table-body"/);
+  assert.match(html, /colspan="6"/);
   assert.match(html, /src="\/governance-bootstrap\.js"/);
 });
 
@@ -29,12 +33,15 @@ test("governance bootstrap applies Glaze, shared appearance, refresh discipline,
   assert.ok(governanceIndex > refreshIndex);
 });
 
-test("governance renderer uses only the read-only governance endpoint and labels observations conservatively", () => {
+test("governance renderer uses only the read-only governance endpoint and labels evidence conservatively", () => {
   assert.match(renderer, /fetch\("\/api\/governance"/);
   assert.match(renderer, /No repository state was changed/);
   assert.match(renderer, /Unknown — observation unavailable/);
   assert.match(renderer, /None observed/);
+  assert.match(renderer, /No matching rule/);
+  assert.match(renderer, /GitHub rulesets (?:are )?not (?:included|evaluated)/);
   assert.doesNotMatch(renderer, /compliant/i);
+  assert.doesNotMatch(renderer, /noncompliant/i);
 });
 
 test("main Glaze bootstrap exposes the governance control plane without duplicating its active page navigation", () => {
