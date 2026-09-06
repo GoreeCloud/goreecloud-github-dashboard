@@ -25,6 +25,12 @@ function repositoryExpression(repository, path) {
   return `${branch}:${path}`;
 }
 
+function coverageStatus(total, checked, unavailable) {
+  if (total > 0 && checked === 0 && unavailable > 0) return "unavailable";
+  if (unavailable > 0) return "partial";
+  return "complete";
+}
+
 export function buildGovernanceGraphqlQuery(owner, repositories) {
   const fields = repositories.map((repository, index) => {
     const probes = GOVERNANCE_PROBES.map((probe) => (
@@ -81,6 +87,7 @@ export function buildGovernanceCoverage(repositories, observations = []) {
 
   const checkedRepositories = rows.filter((row) => row.checksAvailable).length;
   const unavailableRepositories = rows.length - checkedRepositories;
+  const overallStatus = coverageStatus(rows.length, checkedRepositories, unavailableRepositories);
   const probes = GOVERNANCE_PROBES.map((probe) => {
     const present = rows.filter((row) => row.checksAvailable && row.presentChecks.includes(probe.key)).length;
     return {
@@ -91,12 +98,12 @@ export function buildGovernanceCoverage(repositories, observations = []) {
       present,
       absent: Math.max(0, checkedRepositories - present),
       unavailable: unavailableRepositories,
-      status: unavailableRepositories > 0 ? "partial" : "complete",
+      status: overallStatus,
     };
   });
 
   return {
-    status: unavailableRepositories > 0 ? "partial" : "complete",
+    status: overallStatus,
     totalRepositories: rows.length,
     checkedRepositories,
     unavailableRepositories,
