@@ -118,6 +118,55 @@ function renderProbes(probes = []) {
   }
 }
 
+function protectionControlLabels(rules = []) {
+  const labels = [];
+  if (rules.some((rule) => rule.requiresApprovingReviews)) labels.push("approving reviews");
+  if (rules.some((rule) => rule.requiresCodeOwnerReviews)) labels.push("code-owner reviews");
+  if (rules.some((rule) => rule.requiresStatusChecks)) labels.push("status checks");
+  if (rules.some((rule) => rule.requiresStrictStatusChecks)) labels.push("up-to-date branch");
+  if (rules.some((rule) => rule.requiresCommitSignatures)) labels.push("signed commits");
+  if (rules.some((rule) => rule.requiresConversationResolution)) labels.push("conversation resolution");
+  if (rules.some((rule) => rule.requireLastPushApproval)) labels.push("last-push approval");
+  return labels;
+}
+
+function renderClassicProtection(protection = {}) {
+  const container = byId("classic-protection-list");
+  clear(container);
+  setText("classic-protection-count", protection.checkedRepositories ?? 0);
+
+  const card = document.createElement("article");
+  card.className = "list-card";
+
+  const header = document.createElement("div");
+  header.className = "list-card-header";
+  const title = document.createElement("h3");
+  title.className = "item-title";
+  title.textContent = "Classic default-branch rules";
+  header.append(
+    title,
+    createBadge(
+      coverageLabel(protection.status),
+      protection.status === "complete" ? "success" : "private",
+    ),
+  );
+
+  const description = document.createElement("p");
+  description.className = "item-description";
+  if ((protection.checkedRepositories || 0) > 0) {
+    description.textContent = `${protection.protectedRepositories || 0} matching rule observed · ${protection.unprotectedRepositories || 0} no matching rule observed across ${protection.checkedRepositories} safely observed repositories.`;
+  } else {
+    description.textContent = "No repositories were safely observed for classic default-branch protection.";
+  }
+
+  const meta = document.createElement("p");
+  meta.className = "item-meta";
+  meta.textContent = `Classic branch-protection rules only · GitHub rulesets are not included${protection.unavailableRepositories ? ` · ${protection.unavailableRepositories} repository observations unavailable` : ""}`;
+
+  card.append(header, description, meta);
+  container.append(card);
+}
+
 function renderRepositoryRows(repositories = [], query = "") {
   const body = byId("governance-table-body");
   clear(body);
@@ -125,7 +174,19 @@ function renderRepositoryRows(repositories = [], query = "") {
   const filtered = repositories.filter((repository) => {
     if (!normalizedQuery) return true;
     const missingLabels = (repository.missingChecks || []).map((key) => PROBE_LABELS[key] || key);
-    return [repository.name, repository.visibility, repository.status, ...missingLabels]
+    const protection = repository.classicBranchProtection || {};
+    const protectionTerms = !protection.available
+      ? ["protection unavailable"]
+      : protection.defaultBranchProtected
+        ? [
+            "classic protected",
+            "matching rule",
+            ...(protection.matchingRules || []).map((rule) => rule.pattern),
+            ...protectionControlLabels(protection.matchingRules || []),
+          ]
+        : ["no matching rule", "classic unprotected"];
+
+    return [repository.name, repository.visibility, repository.status, ...missingLabels, ...protectionTerms]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(normalizedQuery));
   });
@@ -133,7 +194,7 @@ function renderRepositoryRows(repositories = [], query = "") {
   if (!filtered.length) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 5;
+    cell.colSpan = 6;
     cell.className = "empty-state";
     cell.textContent = normalizedQuery ? "No governance observations match this search." : "No repository observations were returned.";
     row.append(cell);
@@ -173,10 +234,38 @@ function renderRepositoryRows(repositories = [], query = "") {
       missingCell.textContent = repository.missingChecks.map((key) => PROBE_LABELS[key] || key).join(" · ");
     }
 
+    const protectionCell = document.createElement("td");
+    const protection = repository.classicBranchProtection || {};
+    if (!protection.available) {
+      protectionCell.append(createBadge("Unavailable", "private"));
+      const detail = document.createElement("div");
+      detail.className = "repo-description";
+      detail.textContent = "Classic-rule observation unavailable";
+      protectionCell.append(detail);
+    } else if (protection.defaultBranchProtected) {
+      protectionCell.append(createBadge("Matching rule", "success"));
+      const rules = protection.matchingRules || [];
+      const detail = document.createElement("div");
+      detail.className = "repo-description";
+      const controls = protectionControlLabels(rules);
+      const patterns = rules.map((rule) => rule.pattern).filter(Boolean);
+      detail.textContent = [
+        patterns.length ? `Pattern${patterns.length === 1 ? "" : "s"}: ${patterns.join(", ")}` : null,
+        controls.length ? `Observed controls: ${controls.join(" · ")}` : "No selected control flags observed",
+      ].filter(Boolean).join(" · ");
+      protectionCell.append(detail);
+    } else {
+      protectionCell.append(createBadge("No matching rule"));
+      const detail = document.createElement("div");
+      detail.className = "repo-description";
+      detail.textContent = "Classic rules only; GitHub rulesets not evaluated";
+      protectionCell.append(detail);
+    }
+
     const updatedCell = document.createElement("td");
     updatedCell.textContent = formatRelative(repository.updatedAt);
 
-    row.append(repositoryCell, visibilityCell, observedCell, missingCell, updatedCell);
+    row.append(repositoryCell, visibilityCell, observedCell, missingCell, protectionCell, updatedCell);
     body.append(row);
   }
 }
@@ -185,10 +274,12 @@ function renderGovernance(data) {
   state.data = data;
   const summary = data.summary || {};
   const governance = data.governance || {};
+  const classicProtection = governance.classicBranchProtection || {};
 
   setText("stat-total", summary.totalRepositories ?? 0);
   setText("stat-observed", summary.repositoriesWithAllObservedFiles ?? 0);
   setText("stat-gaps", summary.repositoriesWithObservedGaps ?? 0);
+  setText("stat-classic-protected", summary.classicProtectedRepositories ?? 0);
   setText("stat-unavailable", summary.unavailableRepositories ?? 0);
   setPill("generated-at", `Updated ${formatRelative(data.generatedAt)}`);
   setPill("api-state", "Read-only governance connected", true);
@@ -199,9 +290,13 @@ function renderGovernance(data) {
       ? "Observation unavailable"
       : "Observation partial";
   setPill("coverage-state", coverageText, governance.status === "complete");
-  setText("sidebar-status", `${summary.checkedRepositories ?? 0} repositories safely observed`);
+  setText(
+    "sidebar-status",
+    `${summary.checkedRepositories ?? 0} file · ${summary.classicProtectionCheckedRepositories ?? 0} protection observations`,
+  );
 
   renderProbes(governance.probes || []);
+  renderClassicProtection(classicProtection);
   renderRepositoryRows(governance.repositories || [], byId("governance-search").value);
 }
 
