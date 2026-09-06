@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0f6f6a" />
     <meta
       name="description"
-      content="Private GoreeCloud GitHub portfolio governance observation view for repository baseline files and Platform Contract presence."
+      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files and classic default-branch protection."
     />
     <title>GoreeCloud GitHub Governance</title>
     <link rel="stylesheet" href="/styles.css" />
@@ -27,6 +27,7 @@
           <a class="nav-item" href="/">Dashboard</a>
           <a class="nav-item is-active" href="#summary" aria-current="page">Governance</a>
           <a class="nav-item" href="#baseline-files">Baseline files</a>
+          <a class="nav-item" href="#classic-protection">Branch protection</a>
           <a class="nav-item" href="#repositories">Repositories</a>
         </nav>
 
@@ -51,9 +52,9 @@
         <section id="summary" class="hero panel panel-glaze" aria-labelledby="governance-title">
           <div class="hero-copy">
             <span class="hero-kicker">Read-only observation</span>
-            <h2 id="governance-title">See which baseline governance files are observable across the portfolio.</h2>
+            <h2 id="governance-title">See baseline files and classic default-branch protection across the portfolio.</h2>
             <p>
-              File presence is evidence of repository state, not proof of compliance. Applicability, acceptance, and lifecycle authority remain with the governing repository and GoreeCloud platform contracts.
+              Observed files and branch-protection settings are repository-state evidence, not proof of policy compliance. Applicability, acceptance, lifecycle authority, and GitHub rulesets remain separate governance concerns.
             </p>
           </div>
           <div class="hero-meta">
@@ -72,7 +73,7 @@
             <span class="stat-caption">Accessible owned repositories</span>
           </article>
           <article class="stat-card panel">
-            <span class="stat-label">Observed</span>
+            <span class="stat-label">Observed files</span>
             <strong class="stat-value" id="stat-observed">—</strong>
             <span class="stat-caption">All four baseline files present</span>
           </article>
@@ -82,9 +83,14 @@
             <span class="stat-caption">One or more baseline files absent</span>
           </article>
           <article class="stat-card panel">
-            <span class="stat-label">Unavailable</span>
+            <span class="stat-label">Classic protected</span>
+            <strong class="stat-value" id="stat-classic-protected">—</strong>
+            <span class="stat-caption">Default branch has a matching classic rule</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">File unavailable</span>
             <strong class="stat-value" id="stat-unavailable">—</strong>
-            <span class="stat-caption">Repositories not safely classified</span>
+            <span class="stat-caption">Baseline-file evidence unavailable</span>
           </article>
         </section>
 
@@ -103,15 +109,28 @@
           </div>
         </section>
 
+        <section id="classic-protection" class="panel section-panel repository-section" aria-labelledby="classic-protection-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Classic GitHub branch rules</p>
+              <h2 id="classic-protection-heading">Default-branch protection observation</h2>
+            </div>
+            <span class="section-count" id="classic-protection-count">0</span>
+          </div>
+          <div id="classic-protection-list" class="card-list" aria-live="polite">
+            <div class="empty-state">Refresh to inspect classic default-branch protection.</div>
+          </div>
+        </section>
+
         <section id="repositories" class="panel section-panel repository-section" aria-labelledby="repo-heading">
           <div class="section-heading repository-heading">
             <div>
-              <p class="eyebrow">Presence, absence, or unavailable</p>
+              <p class="eyebrow">Observed state or unavailable evidence</p>
               <h2 id="repo-heading">Repository observations</h2>
             </div>
             <label class="search-field">
               <span class="sr-only">Search governance observations</span>
-              <input id="governance-search" type="search" placeholder="Search repositories or gaps" autocomplete="off" />
+              <input id="governance-search" type="search" placeholder="Search repositories, gaps, or protection" autocomplete="off" />
             </label>
           </div>
           <div class="table-wrap">
@@ -122,12 +141,13 @@
                   <th scope="col">Visibility</th>
                   <th scope="col">Observed files</th>
                   <th scope="col">Absent observed files</th>
+                  <th scope="col">Classic branch protection</th>
                   <th scope="col">Updated</th>
                 </tr>
               </thead>
               <tbody id="governance-table-body">
                 <tr>
-                  <td colspan="5" class="empty-state">Refresh to load governance observations.</td>
+                  <td colspan="6" class="empty-state">Refresh to load governance observations.</td>
                 </tr>
               </tbody>
             </table>
@@ -143,7 +163,7 @@
       <nav class="mobile-nav" aria-label="Mobile navigation">
         <a href="/">Dashboard</a>
         <a href="#summary">Summary</a>
-        <a href="#baseline-files">Files</a>
+        <a href="#classic-protection">Protection</a>
         <a href="#repositories">Repos</a>
       </nav>
     </div>
