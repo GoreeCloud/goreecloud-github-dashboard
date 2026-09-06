@@ -464,32 +464,7 @@ async function refreshDashboard() {
   }
 }
 
-function applyTheme(theme) {
-  if (theme === "dark") {
-    document.documentElement.dataset.theme = "dark";
-  } else if (theme === "light") {
-    document.documentElement.dataset.theme = "light";
-  } else {
-    delete document.documentElement.dataset.theme;
-  }
-  localStorage.setItem("goreecloud-github-dashboard-theme", theme);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.dataset.theme || "system";
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const effective = current === "system" ? (prefersDark ? "dark" : "light") : current;
-  applyTheme(effective === "dark" ? "light" : "dark");
-}
-
-function initializeTheme() {
-  const saved = localStorage.getItem("goreecloud-github-dashboard-theme");
-  if (saved === "light" || saved === "dark") applyTheme(saved);
-}
-
-initializeTheme();
 byId("refresh-button").addEventListener("click", refreshDashboard);
-byId("theme-toggle").addEventListener("click", toggleTheme);
 byId("repository-search").addEventListener("input", (event) => {
   renderRepositoryDirectory(state.data?.repositories || [], event.target.value);
 });
