@@ -12,7 +12,7 @@ const requiredFiles = [
   "public/glaze-ui.js",
   "public/glaze-v1.1.css",
   "public/theme-policy.js",
-  "public/appearance-guard.js",
+  "public/appearance-controller.js",
   "functions/api/health.js",
   "functions/api/ready.js",
   "scripts/validate-public-source.mjs",
@@ -31,12 +31,14 @@ for (const file of requiredFiles) {
 
 if (!failures.length) {
   const readme = fs.readFileSync("README.md", "utf8");
+  const app = fs.readFileSync("public/app.js", "utf8");
   const bootstrap = fs.readFileSync("public/bootstrap.js", "utf8");
+  const governanceBootstrap = fs.readFileSync("public/governance-bootstrap.js", "utf8");
   const glazeRuntime = fs.readFileSync("public/glaze-ui.js", "utf8");
   const glazeMapping = fs.readFileSync("docs/GLAZE_UI_CONFORMANCE.md", "utf8");
   const glazeCss = fs.readFileSync("public/glaze-v1.1.css", "utf8");
   const themePolicy = fs.readFileSync("public/theme-policy.js", "utf8");
-  const appearanceGuard = fs.readFileSync("public/appearance-guard.js", "utf8");
+  const appearanceController = fs.readFileSync("public/appearance-controller.js", "utf8");
   const platform = fs.readFileSync("docs/PLATFORM_CONFORMANCE.md", "utf8");
   const manifest = fs.readFileSync("goreecloud.platform.yaml", "utf8");
   const platformWorkflow = fs.readFileSync(".github/workflows/platform-contract.yml", "utf8");
@@ -74,7 +76,7 @@ if (!failures.length) {
 
   const expectedBootstrapOrder = [
     'import "./glaze-ui.js";',
-    'import "./appearance-guard.js";',
+    'import "./appearance-controller.js";',
     'import "./refresh-guard.js";',
     'import "./app.js";',
   ];
@@ -83,6 +85,9 @@ if (!failures.length) {
     const index = bootstrap.indexOf(statement);
     if (index <= previousIndex) failures.push(`Bootstrap order must include ${statement} after the prior migration boundary.`);
     previousIndex = index;
+  }
+  if (!governanceBootstrap.includes('import "./appearance-controller.js";')) {
+    failures.push("Governance view must use the shared four-state appearance controller.");
   }
 
   if (!glazeRuntime.includes('GLAZE_UI_VERSION = "1.1.0"')) {
@@ -103,8 +108,17 @@ if (!failures.length) {
   if (!themePolicy.includes('Object.freeze(["system", "light", "dark", "deep-dark"])')) {
     failures.push("Appearance policy must retain the governed four-state cycle.");
   }
-  if (!appearanceGuard.includes("stopImmediatePropagation")) {
-    failures.push("Appearance migration guard must capture the control before the legacy binary theme listener.");
+  if (!appearanceController.includes('button.addEventListener("click"')) {
+    failures.push("Shared appearance controller must own the appearance control directly.");
+  }
+  if (!appearanceController.includes('dataset.appearanceController = "installed"')) {
+    failures.push("Appearance controller must install idempotently.");
+  }
+  if (appearanceController.includes("stopImmediatePropagation")) {
+    failures.push("Appearance controller must not depend on the superseded capture-phase migration guard.");
+  }
+  for (const legacyMarker of ["function applyTheme(", "function toggleTheme(", "function initializeTheme("]) {
+    if (app.includes(legacyMarker)) failures.push(`Dashboard renderer must not retain legacy binary theme code: ${legacyMarker}`);
   }
   if (!glazeCss.includes(':root[data-theme="deep-dark"]')) {
     failures.push("GLAZE UI CSS must implement explicit Deep Dark appearance.");
