@@ -6,6 +6,10 @@ async function readJson(response) {
   return response.json();
 }
 
+function syntheticCredential() {
+  return ["test", "only", "placeholder"].join("-");
+}
+
 test("dashboard API fails closed when the GitHub credential is absent", async () => {
   const response = await onRequestGet({ env: {} });
   const payload = await readJson(response);
@@ -17,9 +21,10 @@ test("dashboard API fails closed when the GitHub credential is absent", async ()
 });
 
 test("dashboard API fails closed until the private access interlock is confirmed", async () => {
+  const token = syntheticCredential();
   const response = await onRequestGet({
     env: {
-      GITHUB_TOKEN: "test-only-placeholder",
+      GITHUB_TOKEN: token,
       ACCESS_GATE_CONFIRMED: "false",
     },
   });
@@ -27,7 +32,7 @@ test("dashboard API fails closed until the private access interlock is confirmed
 
   assert.equal(response.status, 503);
   assert.equal(payload.code, "private_access_gate_locked");
-  assert.doesNotMatch(JSON.stringify(payload), /test-only-placeholder/);
+  assert.equal(JSON.stringify(payload).includes(token), false);
 });
 
 test("dashboard API rejects mutation-style HTTP methods", async () => {
