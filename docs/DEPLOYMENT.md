@@ -2,11 +2,11 @@
 
 ## Production status
 
-The project remains in the GoreeCloud **Development** lifecycle. Source validation is green for the current development work, but production deployment and acceptance are not approved. This guide defines the intended private deployment boundary; it does not indicate that a live deployment has already been configured or accepted.
+The project remains in the GoreeCloud **Development** lifecycle. Source validation is green for the current development work, but production deployment and acceptance are not approved. The source repository is intentionally **public/open source**; this guide defines the separate **private authenticated deployment boundary** for operational access. A public source repository does not imply that a live operational dashboard has been configured, accepted, or made public.
 
 ## Required architecture
 
-Because the dashboard may expose private repository metadata, the deployed application must be protected by an authenticated private-access layer before the data API is unlocked.
+Because the dashboard may expose private repository metadata, the deployed application must be protected by an authenticated private-access layer before the data API is unlocked. Public access to the source code is permitted; public access to authenticated operational data is not.
 
 Recommended path:
 
@@ -62,7 +62,7 @@ This guard is an operational user-interface safeguard, not server-side rate limi
 
 ## Access-gate sequence
 
-1. Create the Pages project from this repository or another approved GoreeCloud deployment path.
+1. Create the Pages project from this public/open-source repository or another approved GoreeCloud deployment path.
 2. Leave `ACCESS_GATE_CONFIRMED` unset or false.
 3. Deploy and verify that `/api/dashboard` fails closed with the private-access-gate message.
 4. Configure the authenticated private-access layer for the dashboard hostname.
@@ -82,7 +82,7 @@ This guard is an operational user-interface safeguard, not server-side rate limi
 At minimum, validate:
 
 - `npm test` and `npm run check` pass at the exact release-candidate head when the project reaches that lifecycle stage.
-- The deployed site is inaccessible to unauthenticated users.
+- The deployed operational site is inaccessible to unauthenticated users even though the source repository is public.
 - The API fails closed if the GitHub token is removed.
 - The API fails closed if `ACCESS_GATE_CONFIRMED` is not true.
 - Browser developer tools show no GitHub credential or authorization header.
