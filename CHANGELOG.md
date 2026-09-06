@@ -12,17 +12,20 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - GLAZE UI migration tests covering the exact Stable source anchor, material boundary, 48 px target floor, Tablet composition, resilience hooks, bootstrap order, and fail-closed acceptance status.
 - Mandatory repository product records: `COMPETITIVE-OBJECTIVES.md`, `FEATURES.md`, and `BENEFITS.md`.
 - `scripts/validate-product-records.mjs` to enforce product-record presence, README links, current GLAZE UI source target, exact release anchor, acceptance-pending status, and evaluation of all seven GoreeCloud Platform Systems.
+- Root `goreecloud.platform.yaml` adopting GoreeCloud Platform Contract v0.2 with Development lifecycle, all seven Platform Systems, explicit continuity/dependency declarations, current Stable Glaze UI 1.1.0 compatibility, and truthful `nonconformant` status.
+- Exact-head `.github/workflows/platform-contract.yml` pinned to reviewed central `GoreeCloud/GoreeCloud` Platform Contract revision `4a0ebf20ffb669e3d5680ab6c8d34583f1712966`; it validates the manifest, computes the conformance result against the actual pull-request head, validates the result schema, and asserts that Development is not Stable-eligible.
 
 ### Changed
 
 - Synchronized the development branch with the newer `main` baseline so `BRANDING.md` and `docs/PLATFORM_CONFORMANCE.md` are carried forward rather than left behind.
 - Reworked `docs/PLATFORM_CONFORMANCE.md` from a four-system statement into a truthful seven-system status table covering GoreeCloud Manager, Privacy Shield, Wardveil Security, Everkeep, Glaze UI, GoreeCloud Mesh, and GoreeCloud Identity.
+- Extended platform-conformance documentation with the machine-readable v0.2 declaration, continuity boundary, pinned central validator revision, and exact-head wrapper rationale while the central reusable workflow's known PR revision-attribution issue remains unresolved.
 - Updated the static interface and README from the superseded Glaze UI 1.3 label to the current Stable V1.1 / 1.1.0 source target, with acceptance explicitly pending.
 - Replaced the compressed Tablet first-letter navigation rail with a full-label horizontal Tablet navigation composition.
 - Durable dashboard panels no longer depend on backdrop blur; active form-factor navigation remains the primary Glaze surface.
 - Touch-capable buttons, icon buttons, search, navigation, and mobile navigation now use a 48 px minimum source target.
-- `npm run check` now validates product/conformance records and syntax-checks the GLAZE UI runtime module.
-- README now links the competitive objectives, features, benefits, branding, Glaze UI mapping, and seven-system platform-conformance records.
+- `npm run check` now validates product/conformance records, Platform Contract source invariants, and syntax-checks the GLAZE UI runtime module.
+- README now links the competitive objectives, features, benefits, branding, Glaze UI mapping, root Platform Contract declaration, and seven-system platform-conformance records.
 
 ### Security and truthfulness
 
@@ -30,7 +33,8 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - Source-level privacy and security controls remain explicitly distinct from accepted Privacy Shield or Wardveil integration.
 - External private access remains explicitly distinct from GoreeCloud Identity integration.
 - GLAZE UI source migration remains explicitly distinct from rendered, accessibility, form-factor, and production acceptance.
-- The project remains in the Development lifecycle.
+- Platform Contract validation is declaration/conformance evidence only; it cannot upgrade blocked integrations or missing acceptance into positive platform claims.
+- The project remains in the Development lifecycle and the manifest deliberately declares `nonconformant`.
 
 ## 0.3.0-dev — 2026-08-21
 
