@@ -1,12 +1,12 @@
 # GoreeCloud GitHub Dashboard
 
-Private, first-party GoreeCloud repository command center for recent changes, changelogs, top repositories, repository attention, CI health, pull requests, issues, releases, API-budget visibility, and repository inventory.
+First-party GoreeCloud repository command center for recent changes, changelogs, top repositories, repository attention, CI health, pull requests, issues, releases, API-budget visibility, and repository inventory. The dashboard is designed for authenticated private operational use even though repository visibility is a separate GitHub configuration concern.
 
 ## Status
 
 **Release lifecycle: Development.** Source is not production-approved and no production deployment is implied by this repository.
 
-The application is deliberately text-first while its unique canonical product icon/service mark remains unapproved. It follows the current Stable Glaze UI 1.3 baseline with purpose-built Phone, Tablet, Desktop, and Wide Desktop compositions. TV is explicitly unsupported in the initial project scope.
+The application is deliberately text-first while its unique canonical product icon/service mark remains unapproved. Source migration now targets the current Stable **GLAZE UI V1.1 / 1.1.0** baseline. The V1.1 source mapping is implemented as Development work, but rendered, accessibility, resilience, and form-factor acceptance remain pending. Phone, Tablet, Desktop, and Wide Desktop are the intended supported form factors; TV is explicitly unsupported in the initial project scope.
 
 ## Current features
 
@@ -23,9 +23,11 @@ The application is deliberately text-first while its unique canonical product ic
 - Latest release visibility where repositories publish GitHub releases.
 - Repository-local changelog discovery using common `CHANGELOG.md` paths.
 - Searchable repository directory with visibility, language, activity, and open-work metadata.
-- Responsive Glaze UI layouts for Phone, Tablet, Desktop, and Wide Desktop.
-- Light, dark, reduced-motion, increased-contrast, and forced-colors resilience.
+- Development-stage GLAZE UI V1.1 source mapping with solid durable data surfaces, navigation-only Glaze material, 48 px touch targets, and purpose-built Tablet navigation.
+- Light, dark, reduced-motion, reduced-transparency fallback, increased-contrast, and forced-colors resilience.
 - Fail-closed private-data gate for Cloudflare Pages deployments.
+
+See [FEATURES.md](FEATURES.md) for the explicit implemented/partial/not-approved capability boundary.
 
 ## Privacy and security boundary
 
@@ -41,9 +43,17 @@ The API refuses to return repository data unless all of the following are true:
 
 GitHub Actions visibility is deliberately best-effort. If the read-only credential does not include the permission needed to read workflow runs, the rest of the dashboard remains available and the interface reports partial coverage rather than failing the complete aggregation request.
 
-Each GitHub request is also protected by a bounded timeout. The current default is 8 seconds, with internal test/override values clamped to a safe range. Timeout errors follow the same sanitized core-failure or partial-coverage paths as other upstream failures and never expose the GitHub credential.
+Each GitHub request is protected by a bounded timeout. The current default is 8 seconds, with internal test/override values clamped to a safe range. Timeout errors follow the same sanitized core-failure or partial-coverage paths as other upstream failures and never expose the GitHub credential.
 
 The browser also applies a manual-refresh guard. After a successful refresh, additional manual refresh clicks are blocked for 30 seconds. After a failed refresh, retries are held for 10 seconds. This reduces accidental repeated GitHub API fan-out, but it is not server-side rate limiting, authentication, or an abuse-prevention boundary.
+
+## GLAZE UI migration
+
+The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMANCE.md](docs/GLAZE_UI_CONFORMANCE.md). It targets GLAZE UI V1.1 / 1.1.0 and deliberately records rendered and production acceptance as pending. The migration layer is loaded before the refresh guard and application renderer so the active UI exposes the current source target rather than the superseded historical label.
+
+## Platform conformance
+
+The seven GoreeCloud Platform Systems and their current implementation status are recorded in [docs/PLATFORM_CONFORMANCE.md](docs/PLATFORM_CONFORMANCE.md). The dashboard remains Development and nonconformant while applicable Identity, Mesh, Wardveil, Privacy Shield, Everkeep, Manager, and Glaze acceptance gates remain incomplete.
 
 ## Local development
 
@@ -66,18 +76,25 @@ npm test
 npm run check
 ```
 
-The validation workflow checks repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, and unit tests for ranking, normalization, changelog extraction, workflow normalization, rate-limit normalization, repository-attention behavior, partial-data behavior, request timeout behavior, and cooldown calculations.
+Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, cache policy, data health, and the current GLAZE UI V1.1 source-migration contract.
 
 Deterministic representative GitHub fixtures exercise the complete dashboard aggregation path without live credentials. They verify private-repository normalization and owner filtering, complete coverage, Actions permission denial, the distinction between confirmed optional `404` absence and unavailable permission-denied evidence, fail-soft rate-limit loss, and sanitized core GitHub failures. Fixture validation strengthens source confidence but does not replace live private-repository validation, rendered form-factor acceptance, or deployment acceptance.
 
+## Product records
+
+- [COMPETITIVE-OBJECTIVES.md](COMPETITIVE-OBJECTIVES.md) — benchmark goals and deliberate product differences.
+- [FEATURES.md](FEATURES.md) — current, partial, acceptance-gated, and unapproved functionality.
+- [BENEFITS.md](BENEFITS.md) — benefits supported by current Development source and benefits not yet claimed.
+- [BRANDING.md](BRANDING.md) — current canonical identity boundary.
+
 ## Deployment
 
-See `docs/DEPLOYMENT.md`. Do not publish the dashboard with private repository access until its private-access boundary is configured and verified.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Do not publish the dashboard with private repository access until its private-access boundary is configured and verified.
 
 ## Architecture
 
-See `docs/ARCHITECTURE.md` for the read-only aggregation model, partial-data behavior, request timeout strategy, manual-refresh discipline, deterministic GitHub fixture validation, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the read-only aggregation model, partial-data behavior, request timeout strategy, manual-refresh discipline, deterministic GitHub fixture validation, rate-limit strategy, ranking model, repository-attention model, changelog behavior, and security boundaries.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [LICENSE](LICENSE).
