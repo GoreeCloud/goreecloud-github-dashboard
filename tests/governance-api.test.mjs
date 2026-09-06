@@ -28,6 +28,10 @@ function repositoryFixture() {
   };
 }
 
+function graphqlQuery(options = {}) {
+  return JSON.parse(options.body || "{}").query || "";
+}
+
 test("governance API fails closed when GitHub credentials are missing", async () => {
   const response = await onRequestGet({ env: { GITHUB_OWNER: OWNER, ACCESS_GATE_CONFIRMED: "true" } });
   const payload = await response.json();
@@ -48,7 +52,7 @@ test("governance API fails closed when the external access gate is unconfirmed",
   assert.doesNotMatch(JSON.stringify(payload), new RegExp(TOKEN));
 });
 
-test("governance API returns normalized presence-only observations without credential leakage", async () => {
+test("governance API returns normalized file and classic branch-protection observations without credential leakage", async () => {
   const originalFetch = globalThis.fetch;
   const authorizations = [];
 
@@ -61,6 +65,42 @@ test("governance API returns normalized presence-only observations without crede
     }
 
     if (url.pathname === "/graphql") {
+      const query = graphqlQuery(options);
+      if (query.includes("GoreeCloudClassicBranchProtectionObservation")) {
+        return jsonResponse({
+          data: {
+            r0: {
+              name: "governance-fixture",
+              branchProtectionRules: {
+                pageInfo: { hasNextPage: false },
+                nodes: [
+                  {
+                    pattern: "main",
+                    allowsDeletions: false,
+                    allowsForcePushes: false,
+                    isAdminEnforced: true,
+                    requireLastPushApproval: true,
+                    requiredApprovingReviewCount: 1,
+                    requiredStatusCheckContexts: ["validate"],
+                    requiresApprovingReviews: true,
+                    requiresCodeOwnerReviews: true,
+                    requiresCommitSignatures: false,
+                    requiresConversationResolution: true,
+                    requiresLinearHistory: false,
+                    requiresStatusChecks: true,
+                    requiresStrictStatusChecks: true,
+                    matchingRefs: {
+                      pageInfo: { hasNextPage: false },
+                      nodes: [{ name: "main" }],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        });
+      }
+
       return jsonResponse({
         data: {
           r0: {
@@ -87,12 +127,19 @@ test("governance API returns normalized presence-only observations without crede
     assert.equal(response.status, 200);
     assert.equal(payload.owner, OWNER);
     assert.equal(payload.mode, "read-only");
-    assert.equal(payload.observationModel, "presence-only");
+    assert.equal(payload.observationModel, "presence-and-classic-branch-protection");
     assert.equal(payload.summary.totalRepositories, 1);
     assert.equal(payload.summary.checkedRepositories, 1);
     assert.equal(payload.summary.repositoriesWithObservedGaps, 1);
+    assert.equal(payload.summary.classicProtectionCheckedRepositories, 1);
+    assert.equal(payload.summary.classicProtectedRepositories, 1);
+    assert.equal(payload.summary.classicUnprotectedRepositories, 0);
+    assert.equal(payload.summary.classicProtectionUnavailableRepositories, 0);
     assert.equal(payload.governance.repositories[0].status, "gaps");
     assert.deepEqual(payload.governance.repositories[0].missingChecks, ["contributing"]);
+    assert.equal(payload.governance.repositories[0].classicBranchProtection.available, true);
+    assert.equal(payload.governance.repositories[0].classicBranchProtection.defaultBranchProtected, true);
+    assert.equal(payload.governance.repositories[0].classicBranchProtection.matchingRules[0].requiresStatusChecks, true);
     assert.ok(authorizations.every((value) => value === `Bearer ${TOKEN}`));
     assert.doesNotMatch(serialized, new RegExp(TOKEN));
     assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
