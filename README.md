@@ -24,8 +24,9 @@ The application is deliberately text-first while its unique canonical product ic
 - Repository-local changelog discovery using common `CHANGELOG.md` paths.
 - Searchable repository directory with visibility, language, activity, and open-work metadata.
 - Safe process-level `/api/health` and fail-closed configuration-level `/api/ready` operational interfaces.
-- Development-stage GLAZE UI V1.1 source mapping with solid durable data surfaces, navigation-only Glaze material, 48 px touch targets, and purpose-built Tablet navigation.
-- Light, dark, reduced-motion, reduced-transparency fallback, increased-contrast, and forced-colors resilience.
+- Four-state appearance control: System, Light, Dark, and explicit Deep Dark. System follows the operating-system preference; Deep Dark is opt-in.
+- Development-stage GLAZE UI V1.1 source mapping with solid durable data surfaces, navigation-only Glaze material, 48 px touch targets, purpose-built Tablet navigation, Reduced Transparency fallback, and a solid fallback before optional `color-mix()` enhancement.
+- Visible focus, Reduced Motion, Increased Contrast, and Forced Colors resilience.
 - Fail-closed private-data gate for Cloudflare Pages deployments.
 - GoreeCloud Platform Contract v0.2 root declaration with exact-head Development conformance validation.
 
@@ -57,7 +58,9 @@ See [docs/OPERATIONAL_HEALTH.md](docs/OPERATIONAL_HEALTH.md) for exact semantics
 
 ## GLAZE UI migration
 
-The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMANCE.md](docs/GLAZE_UI_CONFORMANCE.md). It targets GLAZE UI V1.1 / 1.1.0 and deliberately records rendered and production acceptance as pending. The migration layer is loaded before the refresh guard and application renderer so the active UI exposes the current source target rather than the superseded historical label.
+The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMANCE.md](docs/GLAZE_UI_CONFORMANCE.md). It targets GLAZE UI V1.1 / 1.1.0 and deliberately records rendered and production acceptance as pending. The migration layer is loaded before the appearance policy, refresh guard, and application renderer so the active UI exposes the current source target rather than the superseded historical label.
+
+Appearance now cycles `System → Light → Dark → Deep Dark → System`. The System state keeps operating-system Light/Dark behavior, while Deep Dark remains an explicit near-black mode. The appearance migration guard captures the existing appearance control before the legacy binary listener, keeping the new policy isolated from the read-only dashboard data renderer until a later renderer cleanup can remove the superseded binary theme code.
 
 ## Platform conformance
 
@@ -86,7 +89,7 @@ npm test
 npm run check
 ```
 
-Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, operational health/readiness, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
+Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, operational health/readiness, appearance-policy behavior, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
 
 Deterministic representative GitHub fixtures exercise the complete dashboard aggregation path without live credentials. They verify private-repository normalization and owner filtering, complete coverage, Actions permission denial, the distinction between confirmed optional `404` absence and unavailable permission-denied evidence, fail-soft rate-limit loss, and sanitized core GitHub failures. Fixture validation strengthens source confidence but does not replace live private-repository validation, rendered form-factor acceptance, or deployment acceptance.
 

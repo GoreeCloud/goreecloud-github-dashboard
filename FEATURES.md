@@ -25,15 +25,17 @@ This record distinguishes verified source functionality from work that is partia
 - Strict browser security headers and sanitized API failure responses.
 - Safe `/api/health` process-liveness endpoint with no GitHub or credential dependency.
 - Fail-closed `/api/ready` configuration-readiness endpoint requiring both server-side GitHub credential configuration and confirmed external private-access configuration without exposing which prerequisite is missing.
-- Light/dark appearance support, visible focus, Reduced Motion, Increased Contrast, Forced Colors, and solid-surface resilience.
+- Four-state appearance policy: System, Light, Dark, and explicit Deep Dark, with an accessible deterministic cycle and persisted user selection.
+- System appearance follows operating-system Light/Dark preference; Deep Dark remains an explicit opt-in rather than being inferred automatically.
+- Light/dark/deep-dark appearance support, visible focus, Reduced Motion, Increased Contrast, Forced Colors, Reduced Transparency fallback, and solid-surface/color-mix resilience.
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
 - GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, health/readiness interfaces, and nonconformant status.
 - Exact-head Platform Contract CI wrapper pinned to the reviewed central contract implementation, including computed-result schema validation and a fail-closed Stable-eligibility assertion.
-- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, operational-health, Glaze-migration, and product/conformance source tests.
+- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, appearance-policy, operational-health, Glaze-migration, and product/conformance source tests.
 
 ## Partial or acceptance-gated
 
-- **GLAZE UI V1.1:** source migration is in progress; rendered, accessibility, resilience, and form-factor acceptance remain pending.
+- **GLAZE UI V1.1:** source migration now includes System, Light, Dark, and Deep Dark appearance states; rendered, accessibility, resilience, optical-quality, and form-factor acceptance remain pending.
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
 - **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
 - **GitHub Actions coverage:** best-effort and dependent on the least-privilege runtime credential's supported read permission.

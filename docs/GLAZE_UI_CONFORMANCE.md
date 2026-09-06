@@ -20,11 +20,22 @@ The dashboard maps the V1.1 hierarchy as follows:
 - **Glaze:** the active navigation shell for the current form factor: desktop/sidebar, tablet navigation bar, or phone bottom navigation.
 - **Deep Glaze / Live Glaze:** not currently required by this product and therefore not introduced merely for decoration.
 
-The application deliberately limits blur to navigation chrome. Dense repository data and operational decisions remain on durable surfaces.
+The application deliberately limits blur to navigation chrome. Dense repository data and operational decisions remain on durable surfaces. The optional hero tint has a solid fallback before its `color-mix()` enhancement, so unsupported color-mixing cannot expose the superseded translucent data-panel material.
 
 ### Semantic color
 
 Deep Teal is the application interaction accent and Soft Amber is a restrained atmospheric accent. Success, warning, danger, privacy, and security meaning continue to use their existing semantic roles and must not be inferred from decorative atmospheric color.
+
+### Appearance
+
+The Development source now exposes four deterministic appearance states:
+
+- **System** — follows the operating-system Light/Dark preference and updates through CSS media behavior without converting the preference into an application-owned mode.
+- **Light** — explicit light canvas and durable light surfaces.
+- **Dark** — explicit dark canvas with Deep Teal interaction accents.
+- **Deep Dark** — explicit near-black canvas and elevated dark surfaces, distinct from ordinary Dark and never inferred automatically from the system setting.
+
+The appearance control cycles `System → Light → Dark → Deep Dark → System`, persists only the selected mode, and receives an accessible label that names both the current and next mode. Appearance behavior is isolated from dashboard data rendering in a migration guard so the read-only data renderer remains unchanged.
 
 ### Input and target sizing
 
@@ -40,7 +51,7 @@ Touch-capable controls use a 48 px minimum reference target. Keyboard focus rema
 
 ### Accessibility and resilience
 
-The source retains visible focus, skip navigation, Reduced Motion handling, Increased Contrast behavior, Forced Colors behavior, solid-surface fallbacks, and horizontal overflow for dense tables. The V1.1 layer adds a Reduced Transparency fallback and avoids making blur necessary for content comprehension.
+The source retains visible focus, skip navigation, Reduced Motion handling, Increased Contrast behavior, Forced Colors behavior, solid-surface fallbacks, and horizontal overflow for dense tables. The V1.1 layer adds a Reduced Transparency fallback, operating-system dark-preference behavior for System appearance, a solid fallback before optional `color-mix()`, and avoids making blur necessary for content comprehension.
 
 ### Identity
 
@@ -51,7 +62,7 @@ The application remains text-first because a unique canonical GitHub Dashboard p
 The following work remains open and blocks a Glaze UI completion claim:
 
 - Rendered acceptance at representative Phone, Tablet, Desktop, and Wide Desktop sizes.
-- Light, Dark, and applicable Deep Dark behavior review.
+- Rendered Light, Dark, Deep Dark, and System-preference behavior review.
 - 200% text and content-reflow validation.
 - Keyboard-only task-flow validation and focus-order review.
 - Touch interaction review on representative mobile/tablet environments.

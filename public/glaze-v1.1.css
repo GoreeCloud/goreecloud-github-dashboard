@@ -23,6 +23,72 @@
   --on-accent: #052723;
 }
 
+/* System appearance follows the operating-system dark preference when the
+ * application has no explicit data-theme attribute.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --canvas: #0d1119;
+    --canvas-deep: #080b11;
+    --surface: rgba(25, 31, 43, 0.72);
+    --surface-solid: #151b26;
+    --surface-raised: rgba(29, 37, 52, 0.92);
+    --overlay: rgba(3, 6, 10, 0.78);
+    --text: #edf2ff;
+    --text-muted: #9ca8bd;
+    --border: rgba(180, 195, 220, 0.15);
+    --border-strong: rgba(180, 195, 220, 0.28);
+    --accent: #75d2c8;
+    --accent-strong: #9be3da;
+    --accent-soft: rgba(117, 210, 200, 0.14);
+    --success: #6ed5b4;
+    --success-soft: rgba(110, 213, 180, 0.13);
+    --warning: #e3bd68;
+    --warning-soft: rgba(227, 189, 104, 0.13);
+    --danger: #ff9aaa;
+    --danger-soft: rgba(255, 154, 170, 0.13);
+    --shadow-soft: 0 22px 65px rgba(0, 0, 0, 0.25);
+    --shadow-raised: 0 20px 48px rgba(0, 0, 0, 0.36);
+    --aura-warm: rgba(226, 168, 80, 0.14);
+    --content-surface: #151b1f;
+    --content-surface-raised: #1b2328;
+    --on-accent: #052723;
+  }
+}
+
+/* Deep Dark is an explicit, near-black V1.1 appearance. It is intentionally
+ * distinct from ordinary Dark and never inferred from the system setting.
+ */
+:root[data-theme="deep-dark"] {
+  color-scheme: dark;
+  --canvas: #06090b;
+  --canvas-deep: #020405;
+  --surface: rgba(12, 17, 20, 0.9);
+  --surface-solid: #0c1114;
+  --surface-raised: rgba(18, 24, 28, 0.96);
+  --overlay: rgba(0, 0, 0, 0.86);
+  --text: #f1f7f6;
+  --text-muted: #a6b3b1;
+  --border: rgba(188, 211, 207, 0.14);
+  --border-strong: rgba(188, 211, 207, 0.26);
+  --accent: #80d9cf;
+  --accent-strong: #a3e7df;
+  --accent-soft: rgba(128, 217, 207, 0.13);
+  --success: #79d8b9;
+  --success-soft: rgba(121, 216, 185, 0.12);
+  --warning: #e8c170;
+  --warning-soft: rgba(232, 193, 112, 0.12);
+  --danger: #ffa0af;
+  --danger-soft: rgba(255, 160, 175, 0.12);
+  --shadow-soft: 0 24px 70px rgba(0, 0, 0, 0.46);
+  --shadow-raised: 0 22px 54px rgba(0, 0, 0, 0.58);
+  --aura-warm: rgba(226, 168, 80, 0.1);
+  --content-surface: #0c1114;
+  --content-surface-raised: #12181c;
+  --on-accent: #032521;
+}
+
 body {
   background:
     radial-gradient(circle at 8% 6%, var(--accent-soft), transparent 30rem),
@@ -41,6 +107,10 @@ body {
 }
 
 .panel-glaze {
+  /* The first declaration is the compatibility fallback when color-mix() is
+   * unsupported. The optional gradient never determines readability.
+   */
+  background: var(--content-surface);
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--content-surface-raised) 92%, var(--accent) 8%), var(--content-surface));
 }

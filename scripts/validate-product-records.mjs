@@ -10,9 +10,12 @@ const requiredFiles = [
   "docs/OPERATIONAL_HEALTH.md",
   "public/glaze-ui.js",
   "public/glaze-v1.1.css",
+  "public/theme-policy.js",
+  "public/appearance-guard.js",
   "functions/api/health.js",
   "functions/api/ready.js",
   "tests/glaze-ui-conformance.test.mjs",
+  "tests/appearance-policy.test.mjs",
   "tests/health-readiness.test.mjs",
   ".github/workflows/platform-contract.yml",
 ];
@@ -28,6 +31,9 @@ if (!failures.length) {
   const bootstrap = fs.readFileSync("public/bootstrap.js", "utf8");
   const glazeRuntime = fs.readFileSync("public/glaze-ui.js", "utf8");
   const glazeMapping = fs.readFileSync("docs/GLAZE_UI_CONFORMANCE.md", "utf8");
+  const glazeCss = fs.readFileSync("public/glaze-v1.1.css", "utf8");
+  const themePolicy = fs.readFileSync("public/theme-policy.js", "utf8");
+  const appearanceGuard = fs.readFileSync("public/appearance-guard.js", "utf8");
   const platform = fs.readFileSync("docs/PLATFORM_CONFORMANCE.md", "utf8");
   const manifest = fs.readFileSync("goreecloud.platform.yaml", "utf8");
   const platformWorkflow = fs.readFileSync(".github/workflows/platform-contract.yml", "utf8");
@@ -38,8 +44,17 @@ if (!failures.length) {
     if (!readme.includes(record)) failures.push(`README must link ${record}`);
   }
 
-  if (!bootstrap.startsWith('import "./glaze-ui.js";')) {
-    failures.push("GLAZE UI migration must load before dashboard behavior.");
+  const expectedBootstrapOrder = [
+    'import "./glaze-ui.js";',
+    'import "./appearance-guard.js";',
+    'import "./refresh-guard.js";',
+    'import "./app.js";',
+  ];
+  let previousIndex = -1;
+  for (const statement of expectedBootstrapOrder) {
+    const index = bootstrap.indexOf(statement);
+    if (index <= previousIndex) failures.push(`Bootstrap order must include ${statement} after the prior migration boundary.`);
+    previousIndex = index;
   }
 
   if (!glazeRuntime.includes('GLAZE_UI_VERSION = "1.1.0"')) {
@@ -52,6 +67,25 @@ if (!failures.length) {
 
   if (!glazeMapping.includes("15cc76d2bcd4065552dc31c77145b63f34d9e7b2")) {
     failures.push("GLAZE UI mapping must retain the exact Stable source anchor.");
+  }
+
+  for (const appearance of ["System", "Light", "Dark", "Deep Dark"]) {
+    if (!glazeMapping.includes(appearance)) failures.push(`GLAZE UI mapping must document ${appearance} appearance.`);
+  }
+  if (!themePolicy.includes('Object.freeze(["system", "light", "dark", "deep-dark"])')) {
+    failures.push("Appearance policy must retain the governed four-state cycle.");
+  }
+  if (!appearanceGuard.includes("stopImmediatePropagation")) {
+    failures.push("Appearance migration guard must capture the control before the legacy binary theme listener.");
+  }
+  if (!glazeCss.includes(':root[data-theme="deep-dark"]')) {
+    failures.push("GLAZE UI CSS must implement explicit Deep Dark appearance.");
+  }
+  if (!glazeCss.includes(":root:not([data-theme])")) {
+    failures.push("System appearance must preserve operating-system dark preference behavior.");
+  }
+  if (!/\.panel-glaze\s*\{[\s\S]*background:\s*var\(--content-surface\);[\s\S]*color-mix/.test(glazeCss)) {
+    failures.push("Optional color-mix hero material must retain a solid compatibility fallback.");
   }
 
   for (const system of [
