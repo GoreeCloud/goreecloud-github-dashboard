@@ -23,16 +23,19 @@ This record distinguishes verified source functionality from work that is partia
 - Manual refresh discipline with a 30-second post-success cooldown and 10-second failure retry floor.
 - Private/no-store API cache policy; shared private-data caching is intentionally disabled.
 - Strict browser security headers and sanitized API failure responses.
+- Safe `/api/health` process-liveness endpoint with no GitHub or credential dependency.
+- Fail-closed `/api/ready` configuration-readiness endpoint requiring both server-side GitHub credential configuration and confirmed external private-access configuration without exposing which prerequisite is missing.
 - Light/dark appearance support, visible focus, Reduced Motion, Increased Contrast, Forced Colors, and solid-surface resilience.
 - Current-Stable GLAZE UI V1.1 / 1.1.0 source migration layer with 48 px touch targets, solid durable data surfaces, navigation-only Glaze material, and improved tablet navigation.
-- GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, and nonconformant status.
+- GoreeCloud Platform Contract v0.2 root manifest declaring all seven Platform Systems, Development lifecycle, health/readiness interfaces, and nonconformant status.
 - Exact-head Platform Contract CI wrapper pinned to the reviewed central contract implementation, including computed-result schema validation and a fail-closed Stable-eligibility assertion.
-- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, Glaze-migration, and product/conformance source tests.
+- Deterministic unit, contract, representative aggregation, edge, bounded-collection, request-header, cache-policy, data-health, refresh-policy, operational-health, Glaze-migration, and product/conformance source tests.
 
 ## Partial or acceptance-gated
 
 - **GLAZE UI V1.1:** source migration is in progress; rendered, accessibility, resilience, and form-factor acceptance remain pending.
 - **Platform Contract v0.2:** declaration and source/CI validation are implemented; the computed result is intentionally nonconformant because required platform-system integrations and acceptance evidence remain incomplete.
+- **Operational health/readiness:** source endpoints and contract tests exist; deployed runtime and monitoring acceptance remain pending.
 - **GitHub Actions coverage:** best-effort and dependent on the least-privilege runtime credential's supported read permission.
 - **Private deployment:** source contains the deployment boundary, but an authenticated private-access layer and production runtime have not been accepted.
 - **Live GitHub validation:** deterministic fixtures exist; representative live public/private repository validation remains required.

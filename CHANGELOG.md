@@ -14,18 +14,23 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - `scripts/validate-product-records.mjs` to enforce product-record presence, README links, current GLAZE UI source target, exact release anchor, acceptance-pending status, and evaluation of all seven GoreeCloud Platform Systems.
 - Root `goreecloud.platform.yaml` adopting GoreeCloud Platform Contract v0.2 with Development lifecycle, all seven Platform Systems, explicit continuity/dependency declarations, current Stable Glaze UI 1.1.0 compatibility, and truthful `nonconformant` status.
 - Exact-head `.github/workflows/platform-contract.yml` pinned to reviewed central `GoreeCloud/GoreeCloud` Platform Contract revision `4a0ebf20ffb669e3d5680ab6c8d34583f1712966`; it validates the manifest, computes the conformance result against the actual pull-request head, validates the result schema, and asserts that Development is not Stable-eligible.
+- Safe `/api/health` process-liveness endpoint that returns only non-secret service metadata and does not depend on GitHub availability or credentials.
+- Fail-closed `/api/ready` configuration-readiness endpoint that requires both server-side GitHub credential configuration and confirmed external private-access configuration without revealing which prerequisite is missing.
+- `docs/OPERATIONAL_HEALTH.md` defining health/readiness semantics, cache/security boundaries, and the distinction between source-level readiness and production acceptance.
+- Health/readiness contract tests covering version synchronization, private no-store responses, generic not-ready behavior, secret non-disclosure, configuration-ready behavior, and non-GET rejection.
 
 ### Changed
 
 - Synchronized the development branch with the newer `main` baseline so `BRANDING.md` and `docs/PLATFORM_CONFORMANCE.md` are carried forward rather than left behind.
 - Reworked `docs/PLATFORM_CONFORMANCE.md` from a four-system statement into a truthful seven-system status table covering GoreeCloud Manager, Privacy Shield, Wardveil Security, Everkeep, Glaze UI, GoreeCloud Mesh, and GoreeCloud Identity.
 - Extended platform-conformance documentation with the machine-readable v0.2 declaration, continuity boundary, pinned central validator revision, and exact-head wrapper rationale while the central reusable workflow's known PR revision-attribution issue remains unresolved.
+- Updated the Platform Contract manifest from absent health/readiness hooks to source-backed `/api/health` and `/api/ready` declarations.
 - Updated the static interface and README from the superseded Glaze UI 1.3 label to the current Stable V1.1 / 1.1.0 source target, with acceptance explicitly pending.
 - Replaced the compressed Tablet first-letter navigation rail with a full-label horizontal Tablet navigation composition.
 - Durable dashboard panels no longer depend on backdrop blur; active form-factor navigation remains the primary Glaze surface.
 - Touch-capable buttons, icon buttons, search, navigation, and mobile navigation now use a 48 px minimum source target.
-- `npm run check` now validates product/conformance records, Platform Contract source invariants, and syntax-checks the GLAZE UI runtime module.
-- README now links the competitive objectives, features, benefits, branding, Glaze UI mapping, root Platform Contract declaration, and seven-system platform-conformance records.
+- `npm run check` now validates product/conformance records, operational endpoint invariants, Platform Contract source invariants, and syntax-checks the GLAZE UI plus health/readiness runtime modules.
+- README now links the competitive objectives, features, benefits, branding, operational health record, Glaze UI mapping, root Platform Contract declaration, and seven-system platform-conformance records.
 
 ### Security and truthfulness
 
@@ -34,6 +39,8 @@ All notable source changes to GoreeCloud GitHub Dashboard are recorded here. Git
 - External private access remains explicitly distinct from GoreeCloud Identity integration.
 - GLAZE UI source migration remains explicitly distinct from rendered, accessibility, form-factor, and production acceptance.
 - Platform Contract validation is declaration/conformance evidence only; it cannot upgrade blocked integrations or missing acceptance into positive platform claims.
+- Readiness returns one generic `deployment_not_ready` state and does not disclose whether the server-side credential or private-access confirmation is missing.
+- Health/readiness endpoints are private no-store, read-only, and do not expose credential material.
 - The project remains in the Development lifecycle and the manifest deliberately declares `nonconformant`.
 
 ## 0.3.0-dev — 2026-08-21

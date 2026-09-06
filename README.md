@@ -23,6 +23,7 @@ The application is deliberately text-first while its unique canonical product ic
 - Latest release visibility where repositories publish GitHub releases.
 - Repository-local changelog discovery using common `CHANGELOG.md` paths.
 - Searchable repository directory with visibility, language, activity, and open-work metadata.
+- Safe process-level `/api/health` and fail-closed configuration-level `/api/ready` operational interfaces.
 - Development-stage GLAZE UI V1.1 source mapping with solid durable data surfaces, navigation-only Glaze material, 48 px touch targets, and purpose-built Tablet navigation.
 - Light, dark, reduced-motion, reduced-transparency fallback, increased-contrast, and forced-colors resilience.
 - Fail-closed private-data gate for Cloudflare Pages deployments.
@@ -48,13 +49,19 @@ Each GitHub request is protected by a bounded timeout. The current default is 8 
 
 The browser also applies a manual-refresh guard. After a successful refresh, additional manual refresh clicks are blocked for 30 seconds. After a failed refresh, retries are held for 10 seconds. This reduces accidental repeated GitHub API fan-out, but it is not server-side rate limiting, authentication, or an abuse-prevention boundary.
 
+## Operational health and readiness
+
+`/api/health` reports only process-level liveness and safe Development metadata. `/api/ready` reports configuration readiness only after the server-side GitHub credential exists and the external private-access layer has been verified and represented by `ACCESS_GATE_CONFIRMED=true`. It does not identify which prerequisite is missing and does not probe GitHub.
+
+See [docs/OPERATIONAL_HEALTH.md](docs/OPERATIONAL_HEALTH.md) for exact semantics. Neither endpoint establishes upstream availability, authenticated-user acceptance, production readiness, or Stable status by itself.
+
 ## GLAZE UI migration
 
 The application-specific source mapping is documented in [docs/GLAZE_UI_CONFORMANCE.md](docs/GLAZE_UI_CONFORMANCE.md). It targets GLAZE UI V1.1 / 1.1.0 and deliberately records rendered and production acceptance as pending. The migration layer is loaded before the refresh guard and application renderer so the active UI exposes the current source target rather than the superseded historical label.
 
 ## Platform conformance
 
-The repository-root [goreecloud.platform.yaml](goreecloud.platform.yaml) declares GoreeCloud Platform Contract v0.2 state. All seven GoreeCloud Platform Systems and their current implementation status are explained in [docs/PLATFORM_CONFORMANCE.md](docs/PLATFORM_CONFORMANCE.md). The manifest is deliberately `nonconformant`, and the dashboard remains Development while applicable Identity, Mesh, Wardveil, Privacy Shield, Everkeep, Manager, and Glaze acceptance gates remain incomplete.
+The repository-root [goreecloud.platform.yaml](goreecloud.platform.yaml) declares GoreeCloud Platform Contract v0.2 state, including `/api/health` and `/api/ready`. All seven GoreeCloud Platform Systems and their current implementation status are explained in [docs/PLATFORM_CONFORMANCE.md](docs/PLATFORM_CONFORMANCE.md). The manifest is deliberately `nonconformant`, and the dashboard remains Development while applicable Identity, Mesh, Wardveil, Privacy Shield, Everkeep, Manager, and Glaze acceptance gates remain incomplete.
 
 The Platform Contract workflow pins the reviewed central contract implementation and validates the exact pull-request head rather than using a synthetic PR merge revision. A passing manifest check does not promote lifecycle status or establish any platform-system acceptance.
 
@@ -79,7 +86,7 @@ npm test
 npm run check
 ```
 
-Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
+Validation covers repository structure, JavaScript syntax, security invariants, dashboard health surfaces, timeout protection, refresh-guard integrity, fail-closed API contracts, deterministic GitHub aggregation, operational health/readiness, cache policy, data health, the current GLAZE UI V1.1 source-migration contract, repository product records, and local Platform Contract source invariants. GitHub Actions additionally runs the pinned central Platform Contract v0.2 validator and evaluator against the exact dashboard revision.
 
 Deterministic representative GitHub fixtures exercise the complete dashboard aggregation path without live credentials. They verify private-repository normalization and owner filtering, complete coverage, Actions permission denial, the distinction between confirmed optional `404` absence and unavailable permission-denied evidence, fail-soft rate-limit loss, and sanitized core GitHub failures. Fixture validation strengthens source confidence but does not replace live private-repository validation, rendered form-factor acceptance, or deployment acceptance.
 

@@ -18,6 +18,12 @@ api:
     - name: dashboard-api
       url: /api/dashboard
       purpose: Read-only normalized GitHub portfolio data for the private dashboard interface.
+    - name: health
+      url: /api/health
+      purpose: Safe process-level liveness for the dashboard function runtime.
+    - name: readiness
+      url: /api/ready
+      purpose: Fail-closed configuration readiness for the private GitHub data boundary.
 
 platform_systems:
   manager:
@@ -73,8 +79,8 @@ platform_systems:
     notes: Authenticated private access is required for deployment, but no GoreeCloud Identity authentication or authorization integration is implemented or accepted.
 
 health:
-  health_endpoint: null
-  readiness_endpoint: null
+  health_endpoint: /api/health
+  readiness_endpoint: /api/ready
 
 continuity:
   backup:
@@ -118,6 +124,7 @@ compatibility:
     - authenticated-private-access-layer
   provides:
     - github-dashboard-read-only-api
+    - github-dashboard-health-readiness
     - github-portfolio-operational-view
 
 evidence:
@@ -130,6 +137,7 @@ conformance:
   evidence:
     - docs/PLATFORM_CONFORMANCE.md
     - docs/GLAZE_UI_CONFORMANCE.md
+    - docs/OPERATIONAL_HEALTH.md
   blockers:
     - GoreeCloud Manager integration and acceptance remain blocked.
     - Privacy Shield integration and acceptance remain blocked.

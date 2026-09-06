@@ -7,9 +7,13 @@ const requiredFiles = [
   "goreecloud.platform.yaml",
   "docs/GLAZE_UI_CONFORMANCE.md",
   "docs/PLATFORM_CONFORMANCE.md",
+  "docs/OPERATIONAL_HEALTH.md",
   "public/glaze-ui.js",
   "public/glaze-v1.1.css",
+  "functions/api/health.js",
+  "functions/api/ready.js",
   "tests/glaze-ui-conformance.test.mjs",
+  "tests/health-readiness.test.mjs",
   ".github/workflows/platform-contract.yml",
 ];
 
@@ -27,6 +31,8 @@ if (!failures.length) {
   const platform = fs.readFileSync("docs/PLATFORM_CONFORMANCE.md", "utf8");
   const manifest = fs.readFileSync("goreecloud.platform.yaml", "utf8");
   const platformWorkflow = fs.readFileSync(".github/workflows/platform-contract.yml", "utf8");
+  const health = fs.readFileSync("functions/api/health.js", "utf8");
+  const ready = fs.readFileSync("functions/api/ready.js", "utf8");
 
   for (const record of ["COMPETITIVE-OBJECTIVES.md", "FEATURES.md", "BENEFITS.md"]) {
     if (!readme.includes(record)) failures.push(`README must link ${record}`);
@@ -67,6 +73,8 @@ if (!failures.length) {
     "lifecycle: development",
     "version: 0.3.0-dev",
     'glaze_ui_required: "1.1.0"',
+    "health_endpoint: /api/health",
+    "readiness_endpoint: /api/ready",
     "status: nonconformant",
   ]) {
     if (!manifest.includes(marker)) failures.push(`Platform manifest missing required marker: ${marker}`);
@@ -74,6 +82,21 @@ if (!failures.length) {
 
   if (manifest.includes("result: applicable-conformant")) {
     failures.push("Development manifest must not claim an accepted platform-system integration without evidence.");
+  }
+
+  for (const source of [health, ready]) {
+    if (!source.includes('"Cache-Control": "private, no-store, max-age=0"')) {
+      failures.push("Operational endpoints must remain private no-store.");
+    }
+    if (!source.includes('mode: "read-only"')) {
+      failures.push("Operational endpoints must retain the read-only mode declaration.");
+    }
+  }
+  if (!ready.includes("ACCESS_GATE_CONFIRMED") || !ready.includes("GITHUB_TOKEN")) {
+    failures.push("Readiness must fail closed on both private-access confirmation and GitHub credential configuration.");
+  }
+  if (!ready.includes('code: "deployment_not_ready"')) {
+    failures.push("Readiness must retain a generic not-ready response code.");
   }
 
   if (!platformWorkflow.includes("4a0ebf20ffb669e3d5680ab6c8d34583f1712966")) {
