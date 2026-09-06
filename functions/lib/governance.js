@@ -26,6 +26,8 @@ const MAX_BATCH_SIZE = 25;
 const MAX_BRANCH_PROTECTION_RULES = 100;
 const MAX_MATCHING_REFS = 10;
 const MAX_STATUS_CONTEXTS = 20;
+const MAX_PLATFORM_CONTRACT_BYTES = 32 * 1024;
+const APPLICABLE_COMPONENT_TYPES = new Set(["application", "service"]);
 
 function boundedBatchSize(value = DEFAULT_BATCH_SIZE) {
   const numeric = Number(value);
@@ -54,11 +56,98 @@ function combinedCoverageStatus(...statuses) {
   return "partial";
 }
 
+export function parsePlatformComponentType(text) {
+  if (typeof text !== "string" || !text.trim()) return null;
+
+  const lines = text.replace(/\r\n?/g, "\n").split("\n");
+  let componentIndent = null;
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const indent = rawLine.length - rawLine.trimStart().length;
+
+    if (componentIndent === null) {
+      if (/^component\s*:\s*(?:#.*)?$/i.test(trimmed)) componentIndent = indent;
+      continue;
+    }
+
+    if (indent <= componentIndent) break;
+
+    const match = trimmed.match(/^type\s*:\s*["']?(application|service)["']?\s*(?:#.*)?$/i);
+    if (match && APPLICABLE_COMPONENT_TYPES.has(match[1].toLowerCase())) {
+      return match[1].toLowerCase();
+    }
+  }
+
+  return null;
+}
+
+function platformRoleObservation(node, observationAvailable = true) {
+  if (!observationAvailable) {
+    return {
+      status: "unclassified",
+      componentType: null,
+      source: null,
+      reason: "file-observation-unavailable",
+    };
+  }
+
+  if (!node?.oid) {
+    return {
+      status: "unclassified",
+      componentType: null,
+      source: null,
+      reason: "platform-contract-absent",
+    };
+  }
+
+  const byteSize = Number(node.byteSize);
+  if (Number.isFinite(byteSize) && byteSize > MAX_PLATFORM_CONTRACT_BYTES) {
+    return {
+      status: "unclassified",
+      componentType: null,
+      source: "goreecloud.platform.yaml",
+      reason: "platform-contract-too-large",
+    };
+  }
+
+  if (typeof node.text !== "string") {
+    return {
+      status: "unclassified",
+      componentType: null,
+      source: "goreecloud.platform.yaml",
+      reason: "platform-contract-text-unavailable",
+    };
+  }
+
+  const componentType = parsePlatformComponentType(node.text);
+  if (!componentType) {
+    return {
+      status: "unclassified",
+      componentType: null,
+      source: "goreecloud.platform.yaml",
+      reason: "component-type-unrecognized",
+    };
+  }
+
+  return {
+    status: "applicable",
+    componentType,
+    source: "goreecloud.platform.yaml",
+    reason: "explicit-platform-contract-component-type",
+  };
+}
+
 export function buildGovernanceGraphqlQuery(owner, repositories) {
   const fields = repositories.map((repository, index) => {
-    const probes = ALL_FILE_PROBES.map((probe) => (
-      `${probe.key}: object(expression: ${quoted(repositoryExpression(repository, probe.path))}) { oid }`
-    )).join("\n      ");
+    const probes = ALL_FILE_PROBES.map((probe) => {
+      const expression = quoted(repositoryExpression(repository, probe.path));
+      if (probe.key === "platformContract") {
+        return `${probe.key}: object(expression: ${expression}) { oid ... on Blob { byteSize text } }`;
+      }
+      return `${probe.key}: object(expression: ${expression}) { oid }`;
+    }).join("\n      ");
 
     return `r${index}: repository(owner: ${quoted(owner)}, name: ${quoted(repository.name)}) {\n      name\n      ${probes}\n    }`;
   }).join("\n    ");
@@ -182,6 +271,12 @@ function probeSummary(rows, probes, selector, checkedRepositories, unavailableRe
   });
 }
 
+function summaryApplicability(classifiedRepositories, unclassifiedRepositories) {
+  if (classifiedRepositories === 0) return "repository-role-unclassified";
+  if (unclassifiedRepositories === 0) return "platform-contract-component-type";
+  return "mixed-platform-contract-component-type";
+}
+
 export function buildGovernanceCoverage(repositories, observations = [], protectionObservations = []) {
   const observationByRepository = new Map(observations.map((observation) => [observation.repository, observation]));
   const protectionByRepository = new Map(
@@ -205,6 +300,7 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
     const documentationMissingChecks = available
       ? DOCUMENTATION_PROBES.filter((probe) => presence[probe.key] !== true).map((probe) => probe.key)
       : [];
+    const documentationApplicability = observation?.documentationApplicability || platformRoleObservation(null, available);
 
     const protection = protectionByRepository.get(repository.name);
     const protectionAvailable = protection?.available === true;
@@ -218,6 +314,7 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
       documentation: {
         available,
         status: available ? (documentationMissingChecks.length ? "gaps" : "observed") : "unavailable",
+        applicability: documentationApplicability,
         presentChecks: documentationPresentChecks,
         missingChecks: documentationMissingChecks,
       },
@@ -270,6 +367,16 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
     documentationUnavailableRepositories,
     documentationStatus,
   );
+  const classifiedDocumentationRepositories = rows.filter(
+    (row) => row.documentation.applicability?.status === "applicable",
+  );
+  const unclassifiedDocumentationRepositories = rows.length - classifiedDocumentationRepositories.length;
+  const applicationRepositories = classifiedDocumentationRepositories.filter(
+    (row) => row.documentation.applicability.componentType === "application",
+  ).length;
+  const serviceRepositories = classifiedDocumentationRepositories.filter(
+    (row) => row.documentation.applicability.componentType === "service",
+  ).length;
 
   const protectionCheckedRepositories = rows.filter((row) => row.classicBranchProtection.available).length;
   const protectionUnavailableRepositories = rows.length - protectionCheckedRepositories;
@@ -298,7 +405,22 @@ export function buildGovernanceCoverage(repositories, observations = [], protect
     documentation: {
       status: documentationStatus,
       scope: "policy-defined-application-service-documentation-evidence",
-      applicability: "repository-role-unclassified",
+      applicability: summaryApplicability(
+        classifiedDocumentationRepositories.length,
+        unclassifiedDocumentationRepositories,
+      ),
+      applicabilityModel: "platform-contract-component-type-declaration",
+      applicableComponentTypes: ["application", "service"],
+      classifiedRepositories: classifiedDocumentationRepositories.length,
+      unclassifiedRepositories: unclassifiedDocumentationRepositories,
+      applicationRepositories,
+      serviceRepositories,
+      applicableRepositoriesWithAllObservedFiles: classifiedDocumentationRepositories.filter(
+        (row) => row.documentation.status === "observed",
+      ).length,
+      applicableRepositoriesWithObservedGaps: classifiedDocumentationRepositories.filter(
+        (row) => row.documentation.status === "gaps",
+      ).length,
       checkedRepositories: documentationCheckedRepositories,
       unavailableRepositories: documentationUnavailableRepositories,
       repositoriesWithAllObservedFiles: rows.filter((row) => row.documentation.status === "observed").length,
@@ -332,7 +454,12 @@ async function fetchGovernanceBatch(env, owner, repositories) {
   return repositories.map((repository, index) => {
     const node = payload.data?.[`r${index}`];
     if (!node || node.name !== repository.name) {
-      return { repository: repository.name, available: false, presence: {} };
+      return {
+        repository: repository.name,
+        available: false,
+        presence: {},
+        documentationApplicability: platformRoleObservation(null, false),
+      };
     }
 
     return {
@@ -341,6 +468,7 @@ async function fetchGovernanceBatch(env, owner, repositories) {
       presence: Object.fromEntries(
         ALL_FILE_PROBES.map((probe) => [probe.key, Boolean(node[probe.key]?.oid)]),
       ),
+      documentationApplicability: platformRoleObservation(node.platformContract, true),
     };
   });
 }
@@ -367,6 +495,7 @@ function unavailableFileObservations(batch) {
     repository: repository.name,
     available: false,
     presence: {},
+    documentationApplicability: platformRoleObservation(null, false),
   }));
 }
 
