@@ -36,12 +36,13 @@ test("appearance policy supplies accessible labels and stable icons", () => {
   assert.equal(appearanceIcon("deep-dark"), "●");
 });
 
-test("appearance guard loads before the legacy renderer and captures the control", () => {
+test("shared appearance controller loads before refresh and application behavior", () => {
   const bootstrap = read("public/bootstrap.js");
-  const guard = read("public/appearance-guard.js");
+  const governanceBootstrap = read("public/governance-bootstrap.js");
+  const controller = read("public/appearance-controller.js");
 
   const glaze = bootstrap.indexOf('import "./glaze-ui.js"');
-  const appearance = bootstrap.indexOf('import "./appearance-guard.js"');
+  const appearance = bootstrap.indexOf('import "./appearance-controller.js"');
   const refresh = bootstrap.indexOf('import "./refresh-guard.js"');
   const app = bootstrap.indexOf('import "./app.js"');
 
@@ -49,9 +50,23 @@ test("appearance guard loads before the legacy renderer and captures the control
   assert.ok(appearance > glaze);
   assert.ok(refresh > appearance);
   assert.ok(app > refresh);
-  assert.match(guard, /event\.stopImmediatePropagation\(\)/);
-  assert.match(guard, /true,\s*\);/);
-  assert.match(guard, /Appearance: \$\{appearanceLabel\(current\)\}/);
+  assert.match(governanceBootstrap, /import "\.\/appearance-controller\.js"/);
+  assert.match(controller, /button\.addEventListener\("click"/);
+  assert.match(controller, /Appearance: \$\{appearanceLabel\(current\)\}/);
+  assert.match(controller, /dataset\.appearanceController = "installed"/);
+  assert.match(controller, /catch \{[\s\S]*Appearance remains functional/);
+  assert.doesNotMatch(controller, /stopImmediatePropagation/);
+  assert.doesNotMatch(controller, /addEventListener\([\s\S]*,\s*true\s*\)/);
+});
+
+test("dashboard renderer no longer carries the superseded binary theme implementation", () => {
+  const app = read("public/app.js");
+
+  assert.doesNotMatch(app, /function applyTheme\(/);
+  assert.doesNotMatch(app, /function toggleTheme\(/);
+  assert.doesNotMatch(app, /function initializeTheme\(/);
+  assert.doesNotMatch(app, /matchMedia\("\(prefers-color-scheme: dark\)"\)/);
+  assert.doesNotMatch(app, /theme-toggle.*toggleTheme/);
 });
 
 test("V1.1 appearance CSS includes system dark, explicit Deep Dark, and solid color-mix fallback", () => {
