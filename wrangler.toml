@@ -1,0 +1,7 @@
+name = "goreecloud-github-dashboard"
+compatibility_date = "2026-08-21"
+pages_build_output_dir = "./public"
+
+# Runtime secrets and private configuration are intentionally not stored here.
+# Configure GITHUB_TOKEN, GITHUB_OWNER, and ACCESS_GATE_CONFIRMED in the
+# Cloudflare Pages/Workers environment after the private-access boundary is set.

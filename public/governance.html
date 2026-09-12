@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0f6f6a" />
+    <meta
+      name="description"
+      content="Private GoreeCloud GitHub portfolio governance observation view for baseline files, policy-defined documentation evidence and applicability declarations, classic default-branch protection, active rulesets, and required-workflow references."
+    />
+    <title>GoreeCloud GitHub Governance</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/glaze-v1.1.css" data-glaze-ui-version="1.1.0" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to governance dashboard</a>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand-block">
+          <div class="brand-wordmark">GoreeCloud</div>
+          <div class="brand-product">GitHub Dashboard</div>
+        </div>
+
+        <nav class="nav-list">
+          <a class="nav-item" href="/">Dashboard</a>
+          <a class="nav-item is-active" href="#summary" aria-current="page">Governance</a>
+          <a class="nav-item" href="#baseline-files">Baseline files</a>
+          <a class="nav-item" href="#documentation">Documentation</a>
+          <a class="nav-item" href="#classic-protection">Classic protection</a>
+          <a class="nav-item" href="#rulesets">Rulesets</a>
+          <a class="nav-item" href="#required-workflows">Required workflows</a>
+          <a class="nav-item" href="#repositories">Repositories</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="sidebar-status">Waiting for governance data</span>
+        </div>
+      </aside>
+
+      <main id="main" class="main-content" tabindex="-1">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Portfolio control plane</p>
+            <h1>Repository governance</h1>
+          </div>
+          <div class="topbar-actions">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle appearance" title="Toggle appearance">◐</button>
+            <button id="refresh-button" class="button button-primary" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section id="summary" class="hero panel panel-glaze" aria-labelledby="governance-title">
+          <div class="hero-copy">
+            <span class="hero-kicker">Read-only observation</span>
+            <h2 id="governance-title">See baseline files, documentation evidence, applicability declarations, branch protections, active rulesets, and required-workflow references across the portfolio.</h2>
+            <p>
+              These signals are repository-state evidence, not proof of policy satisfaction. Documentation applicability is classified only when the exact default-branch Platform Contract explicitly declares <code>component.type</code> as application or service; every other repository remains unclassified. Required-workflow references likewise remain evidence until separate governed interpretation exists.
+            </p>
+          </div>
+          <div class="hero-meta">
+            <a class="pill" href="/">Dashboard</a>
+            <span class="pill" id="generated-at">Not refreshed yet</span>
+            <span class="pill pill-success" id="api-state">Secure gate pending</span>
+            <span class="pill" id="coverage-state">Observation unknown</span>
+            <span class="pill" id="refresh-state">Refresh available</span>
+          </div>
+        </section>
+
+        <section class="stats-grid" aria-label="Governance observation summary">
+          <article class="stat-card panel">
+            <span class="stat-label">Repositories</span>
+            <strong class="stat-value" id="stat-total">—</strong>
+            <span class="stat-caption">Accessible owned repositories</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Baseline complete</span>
+            <strong class="stat-value" id="stat-observed">—</strong>
+            <span class="stat-caption">All four baseline files present</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Baseline gaps</span>
+            <strong class="stat-value" id="stat-gaps">—</strong>
+            <span class="stat-caption">One or more baseline files absent</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs complete</span>
+            <strong class="stat-value" id="stat-documentation-complete">—</strong>
+            <span class="stat-caption">All six documentation paths present</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs gaps</span>
+            <strong class="stat-value" id="stat-documentation-gaps">—</strong>
+            <span class="stat-caption">Observed absence; policy result not inferred</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs applicable</span>
+            <strong class="stat-value" id="stat-documentation-applicable">—</strong>
+            <span class="stat-caption">Application/service declared by Platform Contract</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Docs unclassified</span>
+            <strong class="stat-value" id="stat-documentation-unclassified">—</strong>
+            <span class="stat-caption">No safe application/service declaration</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Classic protected</span>
+            <strong class="stat-value" id="stat-classic-protected">—</strong>
+            <span class="stat-caption">Default branch has a matching classic rule</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Active rulesets</span>
+            <strong class="stat-value" id="stat-rulesets-active">—</strong>
+            <span class="stat-caption">Default branch has active ruleset rules</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">Workflow rules</span>
+            <strong class="stat-value" id="stat-required-workflows">—</strong>
+            <span class="stat-caption">Repositories with active workflow rules</span>
+          </article>
+          <article class="stat-card panel">
+            <span class="stat-label">File unavailable</span>
+            <strong class="stat-value" id="stat-unavailable">—</strong>
+            <span class="stat-caption">GraphQL file evidence unavailable</span>
+          </article>
+        </section>
+
+        <div id="dashboard-alert" class="alert" role="status" aria-live="polite" hidden></div>
+
+        <section id="baseline-files" class="panel section-panel repository-section" aria-labelledby="baseline-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Default-branch observation</p>
+              <h2 id="baseline-heading">Baseline file coverage</h2>
+            </div>
+            <span class="section-count" id="probe-count">0</span>
+          </div>
+          <div id="probe-list" class="content-grid" aria-live="polite">
+            <div class="empty-state">Refresh to inspect baseline file presence.</div>
+          </div>
+        </section>
+
+        <section id="documentation" class="panel section-panel repository-section" aria-labelledby="documentation-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Policy-defined file evidence</p>
+              <h2 id="documentation-heading">Application/service documentation observation</h2>
+            </div>
+            <span class="section-count" id="documentation-count">0</span>
+          </div>
+          <p id="documentation-boundary" class="item-meta">
+            Applicability is classified only from an explicit Platform Contract component.type declaration of application or service. Presence or absence remains evidence only.
+          </p>
+          <div id="documentation-list" class="content-grid" aria-live="polite">
+            <div class="empty-state">Refresh to inspect repository documentation evidence.</div>
+          </div>
+        </section>
+
+        <section id="classic-protection" class="panel section-panel repository-section" aria-labelledby="classic-protection-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Classic GitHub branch rules</p>
+              <h2 id="classic-protection-heading">Default-branch protection observation</h2>
+            </div>
+            <span class="section-count" id="classic-protection-count">0</span>
+          </div>
+          <div id="classic-protection-list" class="card-list" aria-live="polite">
+            <div class="empty-state">Refresh to inspect classic default-branch protection.</div>
+          </div>
+        </section>
+
+        <section id="rulesets" class="panel section-panel repository-section" aria-labelledby="rulesets-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Active repository + organization rulesets</p>
+              <h2 id="rulesets-heading">Default-branch ruleset observation</h2>
+            </div>
+            <span class="section-count" id="rulesets-count">0</span>
+          </div>
+          <div id="rulesets-list" class="card-list" aria-live="polite">
+            <div class="empty-state">Refresh to inspect active ruleset rules.</div>
+          </div>
+        </section>
+
+        <section id="required-workflows" class="panel section-panel repository-section" aria-labelledby="required-workflows-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Active workflow-rule references</p>
+              <h2 id="required-workflows-heading">Required workflow observation</h2>
+            </div>
+            <span class="section-count" id="required-workflows-count">0</span>
+          </div>
+          <div id="required-workflows-list" class="card-list" aria-live="polite">
+            <div class="empty-state">Refresh to inspect required-workflow references.</div>
+          </div>
+        </section>
+
+        <section id="repositories" class="panel section-panel repository-section" aria-labelledby="repo-heading">
+          <div class="section-heading repository-heading">
+            <div>
+              <p class="eyebrow">Observed state or unavailable evidence</p>
+              <h2 id="repo-heading">Repository observations</h2>
+            </div>
+            <label class="search-field">
+              <span class="sr-only">Search governance observations</span>
+              <input id="governance-search" type="search" placeholder="Search repositories, docs, roles, protection, rulesets, or workflows" autocomplete="off" />
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Repository</th>
+                  <th scope="col">Visibility</th>
+                  <th scope="col">Baseline files</th>
+                  <th scope="col">Absent baseline files</th>
+                  <th scope="col">Documentation evidence</th>
+                  <th scope="col">Classic branch protection</th>
+                  <th scope="col">Active rulesets</th>
+                  <th scope="col">Updated</th>
+                </tr>
+              </thead>
+              <tbody id="governance-table-body">
+                <tr>
+                  <td colspan="8" class="empty-state">Refresh to load governance observations.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer class="page-footer">
+          <span>GoreeCloud GitHub Dashboard · development</span>
+          <span>Glaze UI 1.1.0 · acceptance pending · governance observation is read-only</span>
+        </footer>
+      </main>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="/">Dashboard</a>
+        <a href="#documentation">Docs</a>
+        <a href="#rulesets">Rulesets</a>
+        <a href="#repositories">Repos</a>
+      </nav>
+    </div>
+
+    <script type="module" src="/governance-bootstrap.js"></script>
+  </body>
+</html>

@@ -1,0 +1,86 @@
+name: Validate GoreeCloud Platform Contract v0.2
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-dashboard-platform-contract-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-platform-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PLATFORM_CONTRACT_REVISION: 4a0ebf20ffb669e3d5680ab6c8d34583f1712966
+      EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact dashboard source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ env.EXPECTED_SHA }}
+
+      - name: Verify exact dashboard source revision
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact Platform Contract implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: GoreeCloud/GoreeCloud
+          ref: ${{ env.PLATFORM_CONTRACT_REVISION }}
+          path: .goreecloud-platform-contract
+          persist-credentials: false
+
+      - name: Verify exact Platform Contract implementation
+        run: test "$(git -C .goreecloud-platform-contract rev-parse HEAD)" = "$PLATFORM_CONTRACT_REVISION"
+
+      - name: Install contract validator dependencies
+        run: python3 -m pip install --disable-pip-version-check PyYAML==6.0.2 jsonschema==4.25.1
+
+      - name: Validate repository platform manifest
+        run: python3 .goreecloud-platform-contract/scripts/validate_platform_manifest.py goreecloud.platform.yaml
+
+      - name: Compute exact-head platform conformance result
+        run: |
+          python3 .goreecloud-platform-contract/scripts/evaluate_platform_conformance.py \
+            goreecloud.platform.yaml \
+            --revision "$EXPECTED_SHA" \
+            --evaluator-revision "$PLATFORM_CONTRACT_REVISION" \
+            --output goreecloud.conformance-result.json
+
+      - name: Validate computed conformance result schema
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, FormatChecker
+
+          schema = json.loads(Path('.goreecloud-platform-contract/schemas/goreecloud.conformance-result.schema.json').read_text())
+          result = json.loads(Path('goreecloud.conformance-result.json').read_text())
+          Draft202012Validator(schema, format_checker=FormatChecker()).validate(result)
+          print('platform-conformance-result: schema validated')
+          PY
+
+      - name: Confirm Development remains fail-closed
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          result = json.loads(Path('goreecloud.conformance-result.json').read_text())
+          assert result['evaluated_revision'] == os.environ['EXPECTED_SHA']
+          assert result['evaluator_revision'] == os.environ['PLATFORM_CONTRACT_REVISION']
+          assert result['lifecycle'] == 'development'
+          assert result['declared_conformance'] == 'nonconformant'
+          assert result['computed_conformance'] == 'nonconformant'
+          assert result['stable_eligible'] is False
+          print('platform-conformance-result: Development remains nonconformant and not Stable-eligible')
+          PY
